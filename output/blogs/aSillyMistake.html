@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HernBlog</title>
+    <link rel="stylesheet" type="text/css" href="main.css">
+</head>
+<body>
+    <div id="mainDiv">
+        <img id="center" src="../blogImages/logo.png" /><br/>
+        <p id="center">
+            <a href="../index.html">BLOG</a>
+            <a href="games.html">GAMES</a>
+        </p>
+        <table>
+            <tr>
+                <td style="width:80%; vertical-align:top;">
+                <h6>Nov 13, 2014</h6>
+<h2>A Silly Mistake</h2>
+<p>Months of development and hours of play testing and nobody on the team had noticed one glaring issue, the collision for hammer (and sword) was wrong.  The easiest way to make sure that all of the monsters and players and walls collide at the right points is to project the collision shape onto the floor.  Well apparently I forgot then when I went to implement the hammer and sword, I just mapped the physics to the visuals.  The red circle below shows where the hammer will collide.<p/>
+<img src="../blogImages/RedCircleHammer.gif" />
+<p>This mistake gives you more range above your character and less below.  The easy way to think about this is that all collision shapes are projected down to the floor, so the area the hammer will collide with should also be projected to the floor like this:<p/>
+<img src="../blogImages/RedCircleFloor.gif" />
+<p>Here's what the debug mode looks like with the fixed hammer, instead of following the hammer the collision shape is projected to the floor.  Also note the player’s collision circle is at their feet.<p/>
+<img src="../blogImages/KCHammerWithDebug.gif" />
+<p>This was easy to fix but I thought it was interesting how easy it is to miss stuff like this and how much of a large effect it had on the game play.<p/>
+<p>As an aside, some of you might notice that using a perfect circle does not match the perspective, as to use circles the camera would have to be directly above.  Instead we should have used ovals that are compressed vertically.  We decided to do this because we didn't want things to clump together too much vertically, also it made animating the attacks much easier.  With this and screen resolutions in mind we should remember to build many of the levels left to right to take advantage of the extra space.<p/>
+
+                </td>
+                <td id="sidebar" style="vertical-align:top; padding-left:10px">
+                <a href="../index.html">There and back again, an OOP tale</a><br/>
+<a href="basicCSharpAutoUpdater.html">Basic C# Auto Updater</a><br/>
+<a href="pillarsOfEternityIsBroken.html">Pillars of Eternity is broken.</a><br/>
+<a href="aSillyMistake.html">A Silly Mistake</a><br/>
+<a href="tweakingTheFarseerEngine.html">Tweaking The Farseer Engine</a><br/>
+<a href="londonAnimeAndGamingConvention.html">London Anime and Gaming Convention</a><br/>
+<a href="swordControlsUpdate.html">Sword Controls Update</a><br/>
+<a href="textureBleeding.html">Texture Bleeding</a><br/>
+<a href="moonBusPostMortem.html">MoonBus Post Mortem</a><br/>
+<a href="optimizingDrawingWithSpriteSheetsAndroid.html">Optimizing drawing with Sprite Sheets (Android)</a><br/>
+<a href="spaceCrazyPrototype.html">Space Crazy Prototype</a><br/>
+<a href="androidResourceScaler.html">Android resource scaler</a><br/>
+<a href="myHistoryWithProgramming.html">my history with programming</a><br/>
+
+                </td>
+            </tr>
+        </table>
+             
+        <br />
+        <a id="center" href="mailto:contact@hernblog.com">contact@hernblog.com</a>
+        <br/>
+        <a id="center" href="https://twitter.com/IanMakesGames" class="twitter-follow-button" data-show-count="false" data-size="large">Follow @IanMakesGames</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+    </div>
+</body>
+</html>

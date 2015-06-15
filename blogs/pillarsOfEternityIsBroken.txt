@@ -1,0 +1,52 @@
+Apr 2, 2015
+Pillars of Eternity is broken.
+
+There's been a ton of hype about Pillars of Eternity (PoE) and since being gifted a copy a few days ago I have spent all my free time absorbed in the world. I'm loving the game but the battle controls are clunky and it has some game breaking bugs and if E.A. had released this game we would be lambasting them.
+
+<strong>Loading Screens:</strong>
+
+Bloodborne is getting thrashed for 30 second loading screens, while PoE seems to be inexplicably off the hook. Load times of 10-30 seconds are unreasonable due to the frequency of the loads. Say you are on the top floor of a building when you receive a quest, you load to the bottom floor, then load the to town, load to another part of town, then load into a building, then load to the basement of that building. Best case scenario you get to have a long thoughtful conversation before repeating the 6 loading screens to collect your quest reward. This is a minor annoyance compared to...
+
+<strong>The Combat Controls:</strong>
+
+Combat is the biggest part of the game, but it controls poorly and the characters are often obscured by walls. It would have helped if the highlight for selected characters wasn't "ever so slightly lighter then normal green". Characters behind walls look almost identical alive or dead, and it doesn't help that there is almost no difference in the portrait of a heavily damaged character and a dead one. When selecting a character, or targeting a spell on an enemy, that is overlapped by a dead character the game often thinks you clicked the dead character.
+
+<figure>
+    <img src="IMAGE_TOKENdeadCharacter.png" />
+    <figcaption>Can you tell which character is dead?</figcaption>
+</figure>
+
+Characters won't do an initial auto attack and there is no indicator to let you know if you are in range or not so you just have to click attack and if you are not in range your character will start to move forward. If you are fighting in an enclosed space and they cant move close enough to get into range they just run back and forth. I have lost many encounters when my wizard moves past my front line to cast a spell and is quickly cut to shreds. Sometimes I notice that one of my characters is just standing there doing nothing. After checking to see if they are paralyzed or in a cool down I realize that nope, they are just waiting for a command. They will automatically switch targets if their current target dies, alas even this can be frustrating when one of your party is under a spell making them a bad guy and suddenly everybody is attacking them.
+
+While none of these things individually is a big deal, together they make the game more of a micro management chore where. In addition to micro managing your units as intended, you also spend lots of time managing around all of these deficiencies. And more then once I have lost a battle due to them which leads me to..
+
+<strong>Saving:</strong>
+
+<figure>
+    <img src="IMAGE_TOKENLoadingSaves.png" />
+    <figcaption>Couldn't they find a better way to convey Eternity?</figcaption>
+</figure>
+
+The game likes to throw you curve balls, really hard battles in otherwise easy areas. I don't really mind this as it can be very rewarding to come back to a battle you struggled with and finish it off, but it does result in tons of saving. I quick save after every battle and often in between, often making proper saves as well. As you progress farther in the game your saves get bigger, and as they get bigger saving starts to take longer and longer. When the save screen comes up it takes a while just to load, showing me past saves (which I don't care about) before I can make a new save. The worst part of this has to be starting up the game, now when I load up the game I have to wait 40 seconds while all the saves get loaded. Even after all of this I was still quite enjoying playing the game, until...
+
+<strong>Game Breaking Bugs:</strong>
+
+I came out of a battle and three of my characters had the status blinded, after sleeping it off and trying to cast all sorts of spells to no avail I found out it's a bug and the solution is to load an old save, not do that side quest, and hope not to get blinded again. I would have done that except while researching this I found another bug, if you have ever double clicked an item to equip it then your characters buffs are broken. I did this pretty early on and so now I have no idea how this will affect my experience and if I will even be able to finish the game, the solution here is to play the first 34 hours of the game again...
+
+What surprised me the most was that, in a world where hated companies are run under the bus for even small mistakes, a beloved company can get away releasing a broken game without much complaint. I think we should hold the good companies more accountable then the bad as we have more to gain from polishing the good games into wonderful experience then trying to get E.A. to polish it's turds.
+
+<a href="http://forums.obsidian.net/topic/73618-getting-rid-of-blinded-status-effect/"><em>Broken Buffs</em></a>
+
+<a href="http://www.rockpapershotgun.com/2015/03/31/the-emperors-borked-clothes-pillars-of-eternity-uber-bug/"><em>Broken Inventory Bug</em></a>
+
+<em>Bonus stuff that didn't make the article:</em>
+
+<em>- Formations orient from the direction you started and not from the direction your characters pathed from.</em>
+
+<em>- Selection bugs out (eg. click on a character portrait and instead of selecting that character, the selected character walks under the portrait).</em>
+
+<em>- During a quick save the screen is paused but the map scroll arrows are still being read. I often hold them down so that the screen starts moving when the save is done and instead the screen is teleported to a corner of the map.</em>
+
+<em>- In some places small parts of the environment that look pathable are not.</em>
+
+<em>- When examining items it opens three windows and then wont open any more until you close one, but it opens them directly on top of each other.</em>

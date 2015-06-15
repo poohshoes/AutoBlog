@@ -1,0 +1,51 @@
+Jul 23, 2014
+Tweaking The Farseer Engine
+
+I am starting to get more comfortable with Farseer Physics Engine and today I found a solution for one of my major gripes with it.
+
+To react to a collision you need to attach a callback to the OnCollision event of your physics body.  This works very well for the majority of situations, but where it doesn't work well is AreaOfEffect attacks, because you only need to check for collision once and then never again.  In Kradens Crypt the fireball spell damages all enemies within a certain range.  To do this the Farseer way you would make a sensor object the size of the AOE attack, put it into the world, wait until the next update for it to call OnCollision and process the spell effects, and then remove it from the world.  We end up with code all over the place instead of one nice linear function.
+
+A cleaner way would be able to just do collision checking on the fly whenever you feel like it.  And so I dug into the sensor code and found this lovely nugget:
+<code>
+touching = Collision.Collision.TestOverlap(shapeA, ChildIndexA, shapeB, ChildIndexB, ref bodyA._xf, ref bodyB._xf);
+</code>
+While I don't understand all of what's going on here sensors in farseer don't have any effect on the physics so I feel pretty comfortable that calling this code won't have any sort of effect on the rest of the engine.  Also it's public and static, lovely.
+
+The shapeA and shapeB properties are easy enough to figure out, childIndex is the index of the "part" of the shape that you want to look at.  CircleShape, PolygonShape, and EdgeShape all have exactly 1 child which means the index is always 0.  ChainShape can have more "parts so we iterate through them in a for loop when checking each child index.  _xf is private and unavailable externally but it's just the transform (position and rotation) of your object which you can get using GetTransform().
+
+Here's the final code, notice that it starts with broad phase collision which gives us a list of the fixtures that may be colliding.  This also runs without actually adding the shape we are testing against to the physics world.
+
+<code>
+internal static List<Fixture> GetFixturesCollidingWithCircle(Vector2 position, float radius)
+{
+    // Use broad phase collision to get a list of fixtures that might collide.
+    var vectorRadius = new Vector2(radius, radius);
+    FarseerPhysics.Collision.AABB queryRegion = new FarseerPhysics.Collision.AABB(position - vectorRadius, position + vectorRadius);
+    List<Fixture> broadPhaseHits = Factories.PhysicsComponents.World.QueryAABB(ref queryRegion);
+
+    // Build our test shape and properties that we need for collision checking.
+    FarseerPhysics.Collision.Shapes.Shape testShape = new FarseerPhysics.Collision.Shapes.CircleShape(radius, 1f);
+    var testRotation = new FarseerPhysics.Common.Rot(0f);
+    var testTransform = new FarseerPhysics.Common.Transform(ref position, ref testRotation);
+    // since our test shape is a circle there will always be exactly 1 Child
+    int testChildIndex = 0;
+
+    var hitFixtures = new List<Fixture>();
+    foreach (var broadPhaseFixture in broadPhaseHits)
+    {
+        for (int childIndex = 0; childIndex < broadPhaseFixture.Shape.ChildCount; childIndex++)
+        {
+            FarseerPhysics.Common.Transform transform;
+            broadPhaseFixture.Body.GetTransform(out transform);
+            if (FarseerPhysics.Collision.Collision.TestOverlap(testShape, testChildIndex, broadPhaseFixture.Shape, childIndex, ref testTransform, ref transform))
+            {
+                hitFixtures.Add(broadPhaseFixture);
+                break;
+            }
+        }
+    }
+    return hitFixtures;
+}
+</code>
+
+Obviously there is room for improvement here by adding the ability to test other shapes but I'm a strong believer of only writing code as you need it.

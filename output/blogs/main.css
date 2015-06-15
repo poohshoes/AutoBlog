@@ -1,0 +1,42 @@
+body
+{
+    font: 20px "Lucida Sans Unicode";
+    color: #404040;
+    background-color: #FFFFFF;
+}
+
+h1
+{
+    color: #404040;
+}
+
+code
+{
+    font: 16px "Lucida Sans Unicode";
+}
+
+figcaption
+{
+    font: 16px "Lucida Sans Unicode";
+    color: #505050;
+}
+
+#mainDiv
+{
+    width:1300px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#center
+{
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+
+#sidebar
+{
+    font: 14px "Lucida Sans Unicode";
+}

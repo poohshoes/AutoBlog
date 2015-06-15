@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HernBlog</title>
+    <link rel="stylesheet" type="text/css" href="main.css">
+</head>
+<body>
+    <div id="mainDiv">
+        <img id="center" src="../blogImages/logo.png" /><br/>
+        <p id="center">
+            <a href="../index.html">BLOG</a>
+            <a href="games.html">GAMES</a>
+        </p>
+        <table>
+            <tr>
+                <td style="width:80%; vertical-align:top;">
+                <h6>Jun 22, 2014</h6>
+<h2>Sword Controls Update</h2>
+<p>This week I spent a good amount of time changing the sword controls. Hopefully they are now something that the team is happy with and won't require any more modifications (except perhaps a little tweaking.)<p/>
+<strong>Problem 1:</strong>
+<p>To swing the sword you literally swing your mouse in the direction of the sword swing. This feels great when swinging from left to right but is super awkward at some of the other angles.<p/>
+<img src="../blogImages/BadSword1.png" /><br />
+<strong>Solution 1:</strong>
+<p>Always swing horizontally now matter what direction you are facing.<p/>
+<img src="../blogImages/GoodSword1.png" />
+<p>This feels really good and I think it's a big improvement over how we had it before. Time and user testing will tell if this is a good direction to take. It can be a little hard when you are walking down as the swing happens in the opposite direction from your mouse movement but I think people will figure it out.<p/>
+<strong>Problem 2:</strong>
+<p>The sword always spawns in the middle and so you can only get in half the range of swing.<p/>
+<img src="../blogImages/HalfSwing.gif" /><br />
+<strong>Solution 2:</strong>
+<p>Spawn the sword at the edges.<p/>
+<img src="../blogImages/FullSwing.gif" />
+<p>I added a way of spawning the sword on the extremes depending on which way the mouse is moving when you start using the sword. So you start moving the mouse from left to right for a clockwise swing before you click to bring your sword out then the sword will spawn at the left extreme so that it can swing through the full range of motion. I'm not sure how best to teach the player to correctly use this ability but I think once understood it is easy to execute and gives you the desired control.<p/>
+<strong>Problem 3:</strong>
+<p>Setting the rotation of the sword physics body wasn't working (in the Farseer Physics engine). Sometimes it would work and sometimes it would go to the wrong position or not move at all.<p/>
+<p>This gif does not demonstrate the problem but it does show you the underlying physics objects.  I realize that the physics body doesn't perfectly line up with the sprite but that's a problem for future me.<p/>
+<img src="../blogImages/DebugSwing2.gif" /><br />
+<strong>Solution 3:</strong>
+<p>The sword is made up of a sword body and an origin body (which is what the sword rotates around), which are connected with a joint. I ended up removing the joint, repositioning the objects where I wanted, and then recreating the joint. While I would be surprised if there wasn't an easier way of doing this I was having trouble figuring it out and this works just fine.<p/>
+<p>I couldn't think of a good image to put here so I added is a bonus gif of the test app I made to solve the problem. Sometimes I like to recreate an issue in a new clean project to minimize the code that could be causing the issue.<p/>
+<img src="../blogImages/TestApp.gif" />
+<p>I created the initial sword physics stuff around Christmas and it's been nice to squeeze in another pass to clean it up and get it feeling better. We have a demo due out next week so now I need to get item stats showing up so you can can make an educated decision about which loot to pickup!<p/>
+
+                </td>
+                <td id="sidebar" style="vertical-align:top; padding-left:10px">
+                <a href="../index.html">There and back again, an OOP tale</a><br/>
+<a href="basicCSharpAutoUpdater.html">Basic C# Auto Updater</a><br/>
+<a href="pillarsOfEternityIsBroken.html">Pillars of Eternity is broken.</a><br/>
+<a href="aSillyMistake.html">A Silly Mistake</a><br/>
+<a href="tweakingTheFarseerEngine.html">Tweaking The Farseer Engine</a><br/>
+<a href="londonAnimeAndGamingConvention.html">London Anime and Gaming Convention</a><br/>
+<a href="swordControlsUpdate.html">Sword Controls Update</a><br/>
+<a href="textureBleeding.html">Texture Bleeding</a><br/>
+<a href="moonBusPostMortem.html">MoonBus Post Mortem</a><br/>
+<a href="optimizingDrawingWithSpriteSheetsAndroid.html">Optimizing drawing with Sprite Sheets (Android)</a><br/>
+<a href="spaceCrazyPrototype.html">Space Crazy Prototype</a><br/>
+<a href="androidResourceScaler.html">Android resource scaler</a><br/>
+<a href="myHistoryWithProgramming.html">my history with programming</a><br/>
+
+                </td>
+            </tr>
+        </table>
+             
+        <br />
+        <a id="center" href="mailto:contact@hernblog.com">contact@hernblog.com</a>
+        <br/>
+        <a id="center" href="https://twitter.com/IanMakesGames" class="twitter-follow-button" data-show-count="false" data-size="large">Follow @IanMakesGames</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+    </div>
+</body>
+</html>

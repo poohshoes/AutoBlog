@@ -1,0 +1,142 @@
+Jun 13, 2015
+There and back again, an OOP tale
+
+Kradens Crypt is a game where you progress by moving between rooms and levels. To change to the next room or to the "Elevator" (which takes you to the next level) it pauses for a second while the screen fades in or out.
+
+<figure>
+    <img src="IMAGE_TOKENelevator-300x229.png" />
+    <figcaption>The skeleton powered elevator from Kradens Crypt.</figcaption>
+</figure>
+
+The code for this was dispersed in lots of locations and it was hard to make changes without breaking other parts of the system. To fix these problems multiple booleans were replaced with an enum listing a distinct state, and the related code was all gathered into one place. I figured OOP would be a good way to clean up my code so I made a generic State Machine class. After that cleanup the code looked something like this (state machine class not shown):
+
+<code>
+private enum RoomTransitionStates
+{
+    None,
+    FadingToNextRoom,
+    FadingToNextLevel
+}
+
+private StateMachine<RoomTransitionStates> roomTransitionStateMachine;
+private void SetupRoomTransitionStateMachine()
+{
+    roomTransitionStateMachine = new StateMachine<RoomTransitionStates>(RoomTransitionStates.None);
+    roomTransitionStateMachine.RegisterTransition(RoomTransitionStates.None, RoomTransitionStates.FadingToNextLevel, ReadyForNextLevel);
+    roomTransitionStateMachine.RegisterTransition(RoomTransitionStates.None, RoomTransitionStates.FadingToNextRoom, ReadyForNextRoom);
+    roomTransitionStateMachine.RegisterTransition(RoomTransitionStates.FadingToNextLevel, RoomTransitionStates.None, IsFadeComplete);
+    roomTransitionStateMachine.RegisterTransition(RoomTransitionStates.FadingToNextRoom, RoomTransitionStates.None, IsFadeComplete);
+    roomTransitionStateMachine.RegisterEnteringStateEvent(RoomTransitionStates.FadingToNextLevel, Fade);
+    roomTransitionStateMachine.RegisterExitingStateEvent(RoomTransitionStates.FadingToNextLevel, LoadNextLevel);
+    roomTransitionStateMachine.RegisterEnteringStateEvent(RoomTransitionStates.FadingToNextRoom, Fade);
+    roomTransitionStateMachine.RegisterExitingStateEvent(RoomTransitionStates.FadingToNextRoom, LoadNextRoom);
+}
+
+public override void Update(GameTime gameTime)
+{
+    ...
+    roomTransitionStateMachine.Update();
+    ...
+}
+
+private bool ReadyForNextLevel()
+{
+    ...
+}
+
+private bool ReadyForNextRoom()
+{
+    ...
+}
+
+private bool IsFadeComplete()
+{
+    ...
+}
+
+private void Fade()
+{
+    ...
+}
+
+private void LoadNextLevel()
+{
+    ...
+}
+
+public void LoadNextRoom()
+{
+    ...
+}
+</code>
+
+The above code looks nice and clean, but it's actually a pain to debug. The state machine code can have bugs, the setup can be wrong, or the functions called can have bugs. It can be hard to step through the debugger and get where you want or figure out why an event is firing incorrectly. This resulted in lots of jumping around between the various parts of the code and so I decided to de-OOP my code and inline any functions that were only called once:
+
+<code>
+public enum RoomTransitionStates
+{
+    None,
+    FadingToNextRoom,
+    FadingToElevator,
+}
+    
+public RoomTransitionStates RoomTransitionState;
+
+public override void Update(GameTime gameTime)
+{
+    ...
+    switch (RoomTransitionState)
+    {
+        case RoomTransitionStates.None:
+            bool isReadyForNextLevel;
+            ...
+            bool isReadyForNextRoom;
+            ...
+            if (isReadyForNextLevel)
+            {
+                RoomTransitionState = RoomTransitionStates.FadingToElevator;
+                Fade();
+            }
+            else if(isReadyForNextRoom)
+            {
+                RoomTransitionState = RoomTransitionStates.FadingToNextRoom;
+                Fade();
+            }
+            break;
+        case RoomTransitionStates.FadingToElevator:
+            if (IsFadeComplete())
+            {
+                RoomTransitionState = RoomTransitionStates.None;
+                // Level loading code
+                ...
+            }
+            break;
+        case RoomTransitionStates.FadingToNextRoom:
+            if (IsFadeComplete())
+            {
+                RoomTransitionState = RoomTransitionStates.None;
+                // Room Loading Code
+                ...
+            }
+            break;
+    }
+    ...
+}
+
+private bool IsFadeComplete()
+{
+    ...
+}
+
+private void Fade()
+{
+    ...
+}
+</code>
+
+All of the code is in one place, it's easy to read and follow, and there's no jumping around. The code is much easier to debug and make changes to. I'm fascinated that I thought OOP and functions were the best way to clean up the code, when in reality it just needed to be centralised in one place. The process that the code went through was:
+1. Disorganised code
+2. Organised code with OOP
+3. Organised code without OOP
+
+I used to associate cleaning up my code with writing OOP code, but now I've realized that cleaning up code is just about cleaning up code. In the future I hope to go straight from "Disorganised code" to "Organised code" without the OOP step. Yes it would be ideal to never write disorganised code in the first place, but either that's not how it always works out or I'm just not good enough yet. I hope that examining this has been as helpful for you guys as it was for me, email or tweet at me if you want to discuss further.

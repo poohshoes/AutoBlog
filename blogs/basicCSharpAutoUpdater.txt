@@ -1,0 +1,195 @@
+Jun 1, 2015
+Basic C# Auto Updater
+
+I have a little side project running that allows me to play cards with a friend over the internet.  I'm constantly fixing this or that and he has to re-download it and do some setup every time.  I've never written an Auto Updater and thought it would be a fun weekend project.
+<br/>
+Caveats:
+<li>doesn't handle large files well, though I think it could be added without much effort (I don't need it for this project)</li>
+<li>uses the new Zip Archive from C# 4.5, had to add references to System.IO.Compression and System.IO.Compression.FileSystem, though don't need your game to have this version</li>
+<li>it doesn't use HTTPS and so you could have a man in the middle attack, this is extra bad because you are running an exe file from the download (I didn't fix this because you have to pay yearly for an SSL Certificate to do so)</li>
+
+<br/>
+The code is comprised of 3 parts:
+<li>the Uploader is a separate project that zips up the game and puts it on my server, handling some version number files that are used by the other parts</li>
+<li>the Version Check is code that goes in the game startup before anything else happens, it launches the Updater if necessary</li>
+<li>the Updater is a separate project that downloads and unpacks the new version from the server, and re-launches the game</li>
+    
+<br/>
+<strong>Uploader</strong> - standalone
+
+<code>
+static void Main(string[] args)
+{
+    string pathToZip = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+    pathToZip = Path.GetFullPath(Path.Combine(pathToZip, "..\\..\\..\\..\\"));
+    pathToZip += "KCLidgrenDebug\\bin\\Debug";
+
+    // Get the version number and save a reference file.
+    if (!Directory.Exists("Temp"))
+    {
+        Directory.CreateDirectory("Temp");
+    }
+    WebClient client = new WebClient();
+    client.DownloadFile("http://www.hernblog.com/version.txt", "Temp\\version.txt");
+    int oldVersionNumber = int.Parse(File.ReadAllLines("Temp\\version.txt")[0]);
+    int newVectionNumber = oldVersionNumber + 1;
+    Console.WriteLine(oldVersionNumber + "->" + newVectionNumber);
+    
+    // Store the version number in the project to check vs the server version when checking for updates.
+    string versionNumberPath = Path.Combine(pathToZip, "version.txt");
+    File.WriteAllText(versionNumberPath, newVectionNumber.ToString());
+
+    // Create the zip file.
+    string zippedFileName = "NetPlay.zip";
+    File.Delete(zippedFileName);
+    using (ZipArchive archive = ZipFile.Open(zippedFileName, ZipArchiveMode.Create))
+    {
+        Stack<string> directoriesToZip = new Stack<string>();
+        directoriesToZip.Push(pathToZip);
+        while(directoriesToZip.Count > 0)
+        {
+            string currentDirectory = directoriesToZip.Pop();
+            foreach (string newDirectory in Directory.GetDirectories(currentDirectory))
+            {
+                directoriesToZip.Push(newDirectory);
+            }
+
+            foreach (string file in Directory.GetFiles(currentDirectory))
+            {
+                // If you want to handle large files separately so that they aren't uploaded and downloaded frequently then you should not add them to the archive here.            
+                string entryName = file.Replace(pathToZip + "\\", "");
+                Console.WriteLine(entryName);
+                archive.CreateEntryFromFile(file, entryName);
+            }
+        }
+    }
+
+    // Upload the new zip.
+    UploadFile(zippedFileName);
+
+    // Upload the new version number.
+    Console.WriteLine("Uploading New Version File(" + newVectionNumber + ").");
+    UploadFile(versionNumberPath);
+}
+
+static void UploadFile(string filePath)
+{
+    // The ftp login credentials are stored in a file that is in ignore list for source control so my login info is kept private.
+    // I couldn't figure out how to navigate folders via ftp so the credentials I use are setup to default to the folder I want.
+    string[] credentials = File.ReadAllLines(Path.GetFullPath(Path.Combine("..\\..\\..\\" + "ftpLogin.txt")));
+    string url = "ftp://hernblog.com/"  + Path.GetFileName(filePath);
+    FtpWebRequest request = (FtpWebRequest)FtpWebRequest.Create(url);
+    request.KeepAlive = false;
+    request.Method = WebRequestMethods.Ftp.UploadFile;
+    request.Credentials = new NetworkCredential(credentials[0], credentials[1]);
+    Stream stream = request.GetRequestStream();
+    FileStream fileStream = File.OpenRead(filePath);
+    int length = 1024;
+    byte[] buffer = new byte[length];
+    int bytesRead = 0;
+    int totalBytesRead = 0;
+    string lastPercent = "";
+    do
+    {
+        bytesRead = fileStream.Read(buffer, 0, length);
+        stream.Write(buffer, 0, bytesRead);
+        totalBytesRead += bytesRead;
+        string currentPercent = ((float)totalBytesRead / (float)fileStream.Length * 100f).ToString("0") + "%";
+        if (currentPercent != lastPercent)
+        {
+            lastPercent = currentPercent;
+            Console.WriteLine(currentPercent);
+        }
+    }
+    while (bytesRead != 0);
+    fileStream.Close();
+    stream.Close();
+}
+</code>
+
+Whenever I'm happy with a new version of the game I run the Uploader and the server gets a zip file of the game that contains its version number, as well as an easy to access file with the version number.
+
+<strong>Version Check</strong> - runs when starting up the game
+
+<code>
+if (!Debugger.IsAttached)
+{
+    if (!Directory.Exists("Temp"))
+    {
+        Directory.CreateDirectory("Temp");
+    }
+    WebClient client = new WebClient();
+    client.DownloadFile("http://www.hernblog.com/version.txt", "Temp\\version.txt");
+    int onlineVersionNumber = int.Parse(File.ReadAllLines("Temp\\version.txt")[0]);
+    int currentVersionNumber = int.Parse(File.ReadAllLines("version.txt")[0]);
+    if (onlineVersionNumber != currentVersionNumber)
+    {
+        // We can't update the updater if it's running so we make a copy.
+        CopyDirectoryNotRecursive("Updater", "Temp\\Updater");
+        Process.Start("Temp\\Updater\\Updater.exe");
+        Process.GetCurrentProcess().Kill();
+    }
+}
+</code>
+
+I only run it if the debugger is not attached so that it doesn't try to check for updates while I'm in development (there's probably a better way of doing this with settings files).  The updater code (below) is a program that I copy pasted to the debug directory of the game, so when you package up the game the updater goes as well.  Then when we need to update we actually clone the updater and run the cloned version so that it's possible to overwrite the updater program.  If you wanted to get fancy you could have the Uploader copy the new Updater code when making the zip file.
+
+<strong>Updater</strong> - standalone
+
+<code>
+try
+{
+    Console.WriteLine("Downloading...");
+    WebClient client = new WebClient();
+    string zipFileName = "Temp\\NetPlay.zip";
+    if (File.Exists(zipFileName))
+    {
+        File.Delete(zipFileName);
+    }
+    string directoryName = Path.GetDirectoryName(zipFileName);
+    if (!Directory.Exists(directoryName)) 
+    {
+        Directory.CreateDirectory(directoryName);
+    }
+    client.DownloadFile("http://www.hernblog.com/NetPlay.zip", zipFileName);
+
+    Console.WriteLine("Extracting...");
+    // Note(ian): We can't use this because it won't replace files.
+    //ZipFile.ExtractToDirectory(zipFileName, ".");
+    ZipArchive zipArchive = ZipFile.OpenRead(zipFileName);
+    foreach (ZipArchiveEntry entry in zipArchive.Entries)
+    {
+        string entryDirectory = Path.GetDirectoryName(entry.FullName);
+        if (entryDirectory != "" && !Directory.Exists(entryDirectory))
+        {
+            Directory.CreateDirectory(entryDirectory);
+        }
+        entry.ExtractToFile(entry.FullName, true);
+    }
+
+    Console.WriteLine("Starting up Game");
+    
+    // When the update is done we automatically launch the game
+    Process.Start("Game.exe");
+}
+catch (Exception exception)
+{
+    if (Debugger.IsAttached)
+    {
+        throw;
+    }
+    else
+    {
+        string output = DateTime.Now.ToString() + Environment.NewLine +
+            exception.Message + Environment.NewLine +
+            exception.StackTrace + Environment.NewLine + Environment.NewLine;
+        File.AppendAllText("updaterCrashLog.txt", output);
+    }
+}
+</code>
+
+I added the try catch because I struggled to find a good way of debugging this code as there's a catch in that the Root directory is actually that of the Game and not the Update program folder because of how the process was started.
+
+One problem with this current code is that any large files will have to get re-uploaded and downloaded every time as a part of the zip.  If you have lots of large files that change you would need a better way of upload and download them separately.
+
+Please send me an email or hit me up on twitter if you found this helpful.

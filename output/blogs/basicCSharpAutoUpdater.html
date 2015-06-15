@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HernBlog</title>
+    <link rel="stylesheet" type="text/css" href="main.css">
+</head>
+<body>
+    <div id="mainDiv">
+        <img id="center" src="../blogImages/logo.png" /><br/>
+        <p id="center">
+            <a href="../index.html">BLOG</a>
+            <a href="games.html">GAMES</a>
+        </p>
+        <table>
+            <tr>
+                <td style="width:80%; vertical-align:top;">
+                <h6>Jun 1, 2015</h6>
+<h2>Basic C# Auto Updater</h2>
+<p>I have a little side project running that allows me to play cards with a friend over the internet.  I'm constantly fixing this or that and he has to re-download it and do some setup every time.  I've never written an Auto Updater and thought it would be a fun weekend project.<p/>
+<br/>
+<p>Caveats:<p/>
+<li>doesn't handle large files well, though I think it could be added without much effort (I don't need it for this project)</li>
+<li>uses the new Zip Archive from C# 4.5, had to add references to System.IO.Compression and System.IO.Compression.FileSystem, though don't need your game to have this version</li>
+<li>it doesn't use HTTPS and so you could have a man in the middle attack, this is extra bad because you are running an exe file from the download (I didn't fix this because you have to pay yearly for an SSL Certificate to do so)</li>
+<br/>
+<p>The code is comprised of 3 parts:<p/>
+<li>the Uploader is a separate project that zips up the game and puts it on my server, handling some version number files that are used by the other parts</li>
+<li>the Version Check is code that goes in the game startup before anything else happens, it launches the Updater if necessary</li>
+<li>the Updater is a separate project that downloads and unpacks the new version from the server, and re-launches the game</li>
+<p>    <p/>
+<br/>
+<strong>Uploader</strong> - standalone
+<code><br/>
+static void Main(string[] args)<br/>
+{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;string pathToZip = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;pathToZip = Path.GetFullPath(Path.Combine(pathToZip, "..\\..\\..\\..\\"));<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;pathToZip += "KCLidgrenDebug\\bin\\Debug";<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;// Get the version number and save a reference file.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;if (!Directory.Exists("Temp"))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Directory.CreateDirectory("Temp");<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;WebClient client = new WebClient();<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;client.DownloadFile("http://www.hernblog.com/version.txt", "Temp\\version.txt");<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;int oldVersionNumber = int.Parse(File.ReadAllLines("Temp\\version.txt")[0]);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;int newVectionNumber = oldVersionNumber + 1;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Console.WriteLine(oldVersionNumber + "->" + newVectionNumber);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;// Store the version number in the project to check vs the server version when checking for updates.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;string versionNumberPath = Path.Combine(pathToZip, "version.txt");<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;File.WriteAllText(versionNumberPath, newVectionNumber.ToString());<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;// Create the zip file.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;string zippedFileName = "NetPlay.zip";<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;File.Delete(zippedFileName);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;using (ZipArchive archive = ZipFile.Open(zippedFileName, ZipArchiveMode.Create))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Stack<string> directoriesToZip = new Stack<string>();<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;directoriesToZip.Push(pathToZip);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;while(directoriesToZip.Count > 0)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;string currentDirectory = directoriesToZip.Pop();<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;foreach (string newDirectory in Directory.GetDirectories(currentDirectory))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;directoriesToZip.Push(newDirectory);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;foreach (string file in Directory.GetFiles(currentDirectory))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// If you want to handle large files separately so that they aren't uploaded and downloaded frequently then you should not add them to the archive here.            <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;string entryName = file.Replace(pathToZip + "\\", "");<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Console.WriteLine(entryName);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;archive.CreateEntryFromFile(file, entryName);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;// Upload the new zip.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;UploadFile(zippedFileName);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;// Upload the new version number.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Console.WriteLine("Uploading New Version File(" + newVectionNumber + ").");<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;UploadFile(versionNumberPath);<br/>
+}<br/>
+static void UploadFile(string filePath)<br/>
+{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;// The ftp login credentials are stored in a file that is in ignore list for source control so my login info is kept private.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;// I couldn't figure out how to navigate folders via ftp so the credentials I use are setup to default to the folder I want.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;string[] credentials = File.ReadAllLines(Path.GetFullPath(Path.Combine("..\\..\\..\\" + "ftpLogin.txt")));<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;string url = "ftp://hernblog.com/"  + Path.GetFileName(filePath);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;FtpWebRequest request = (FtpWebRequest)FtpWebRequest.Create(url);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;request.KeepAlive = false;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;request.Method = WebRequestMethods.Ftp.UploadFile;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;request.Credentials = new NetworkCredential(credentials[0], credentials[1]);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Stream stream = request.GetRequestStream();<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;FileStream fileStream = File.OpenRead(filePath);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;int length = 1024;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;byte[] buffer = new byte[length];<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;int bytesRead = 0;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;int totalBytesRead = 0;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;string lastPercent = "";<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;do<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bytesRead = fileStream.Read(buffer, 0, length);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;stream.Write(buffer, 0, bytesRead);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;totalBytesRead += bytesRead;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;string currentPercent = ((float)totalBytesRead / (float)fileStream.Length * 100f).ToString("0") + "%";<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (currentPercent != lastPercent)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;lastPercent = currentPercent;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Console.WriteLine(currentPercent);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;while (bytesRead != 0);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;fileStream.Close();<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;stream.Close();<br/>
+}<br/>
+</code><br/>
+<p>Whenever I'm happy with a new version of the game I run the Uploader and the server gets a zip file of the game that contains its version number, as well as an easy to access file with the version number.<p/>
+<strong>Version Check</strong> - runs when starting up the game
+<code><br/>
+if (!Debugger.IsAttached)<br/>
+{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;if (!Directory.Exists("Temp"))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Directory.CreateDirectory("Temp");<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;WebClient client = new WebClient();<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;client.DownloadFile("http://www.hernblog.com/version.txt", "Temp\\version.txt");<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;int onlineVersionNumber = int.Parse(File.ReadAllLines("Temp\\version.txt")[0]);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;int currentVersionNumber = int.Parse(File.ReadAllLines("version.txt")[0]);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;if (onlineVersionNumber != currentVersionNumber)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// We can't update the updater if it's running so we make a copy.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;CopyDirectoryNotRecursive("Updater", "Temp\\Updater");<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Process.Start("Temp\\Updater\\Updater.exe");<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Process.GetCurrentProcess().Kill();<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+}<br/>
+</code><br/>
+<p>I only run it if the debugger is not attached so that it doesn't try to check for updates while I'm in development (there's probably a better way of doing this with settings files).  The updater code (below) is a program that I copy pasted to the debug directory of the game, so when you package up the game the updater goes as well.  Then when we need to update we actually clone the updater and run the cloned version so that it's possible to overwrite the updater program.  If you wanted to get fancy you could have the Uploader copy the new Updater code when making the zip file.<p/>
+<strong>Updater</strong> - standalone
+<code><br/>
+try<br/>
+{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Console.WriteLine("Downloading...");<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;WebClient client = new WebClient();<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;string zipFileName = "Temp\\NetPlay.zip";<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;if (File.Exists(zipFileName))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;File.Delete(zipFileName);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;string directoryName = Path.GetDirectoryName(zipFileName);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;if (!Directory.Exists(directoryName)) <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Directory.CreateDirectory(directoryName);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;client.DownloadFile("http://www.hernblog.com/NetPlay.zip", zipFileName);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Console.WriteLine("Extracting...");<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;// Note(ian): We can't use this because it won't replace files.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;//ZipFile.ExtractToDirectory(zipFileName, ".");<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;ZipArchive zipArchive = ZipFile.OpenRead(zipFileName);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;foreach (ZipArchiveEntry entry in zipArchive.Entries)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;string entryDirectory = Path.GetDirectoryName(entry.FullName);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (entryDirectory != "" && !Directory.Exists(entryDirectory))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Directory.CreateDirectory(entryDirectory);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;entry.ExtractToFile(entry.FullName, true);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Console.WriteLine("Starting up Game");<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;// When the update is done we automatically launch the game<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Process.Start("Game.exe");<br/>
+}<br/>
+catch (Exception exception)<br/>
+{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;if (Debugger.IsAttached)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;throw;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;else<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;string output = DateTime.Now.ToString() + Environment.NewLine +<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;exception.Message + Environment.NewLine +<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;exception.StackTrace + Environment.NewLine + Environment.NewLine;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;File.AppendAllText("updaterCrashLog.txt", output);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+}<br/>
+</code><br/>
+<p>I added the try catch because I struggled to find a good way of debugging this code as there's a catch in that the Root directory is actually that of the Game and not the Update program folder because of how the process was started.<p/>
+<p>One problem with this current code is that any large files will have to get re-uploaded and downloaded every time as a part of the zip.  If you have lots of large files that change you would need a better way of upload and download them separately.<p/>
+<p>Please send me an email or hit me up on twitter if you found this helpful.<p/>
+
+                </td>
+                <td id="sidebar" style="vertical-align:top; padding-left:10px">
+                <a href="../index.html">There and back again, an OOP tale</a><br/>
+<a href="basicCSharpAutoUpdater.html">Basic C# Auto Updater</a><br/>
+<a href="pillarsOfEternityIsBroken.html">Pillars of Eternity is broken.</a><br/>
+<a href="aSillyMistake.html">A Silly Mistake</a><br/>
+<a href="tweakingTheFarseerEngine.html">Tweaking The Farseer Engine</a><br/>
+<a href="londonAnimeAndGamingConvention.html">London Anime and Gaming Convention</a><br/>
+<a href="swordControlsUpdate.html">Sword Controls Update</a><br/>
+<a href="textureBleeding.html">Texture Bleeding</a><br/>
+<a href="moonBusPostMortem.html">MoonBus Post Mortem</a><br/>
+<a href="optimizingDrawingWithSpriteSheetsAndroid.html">Optimizing drawing with Sprite Sheets (Android)</a><br/>
+<a href="spaceCrazyPrototype.html">Space Crazy Prototype</a><br/>
+<a href="androidResourceScaler.html">Android resource scaler</a><br/>
+<a href="myHistoryWithProgramming.html">my history with programming</a><br/>
+
+                </td>
+            </tr>
+        </table>
+             
+        <br />
+        <a id="center" href="mailto:contact@hernblog.com">contact@hernblog.com</a>
+        <br/>
+        <a id="center" href="https://twitter.com/IanMakesGames" class="twitter-follow-button" data-show-count="false" data-size="large">Follow @IanMakesGames</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+    </div>
+</body>
+</html>
