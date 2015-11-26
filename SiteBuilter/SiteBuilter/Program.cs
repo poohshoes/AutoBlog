@@ -97,7 +97,7 @@ namespace SiteBuilter
                 {
                     link = "INDEX_TOKENindex.html";
                 }
-                sidebar += String.Format("<a href=\"{0}\">{1}</a><br/>\n", link, blogs[i].Header);
+                sidebar += String.Format("<a href=\"{0}\">{1}</a><br/><hr/>\n", link, blogs[i].Header);
             }
 
             string indexOutputDirectory = Path.Combine(resourcePath, "output");
@@ -128,6 +128,8 @@ namespace SiteBuilter
                 }
                 File.WriteAllText(outputPath, output);
             }
+
+            // TODO(ian): Copy all the files in extras
         }
     }
 }

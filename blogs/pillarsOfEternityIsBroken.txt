@@ -35,18 +35,18 @@ I came out of a battle and three of my characters had the status blinded, after 
 
 What surprised me the most was that, in a world where hated companies are run under the bus for even small mistakes, a beloved company can get away releasing a broken game without much complaint. I think we should hold the good companies more accountable then the bad as we have more to gain from polishing the good games into wonderful experience then trying to get E.A. to polish it's turds.
 
-<a href="http://forums.obsidian.net/topic/73618-getting-rid-of-blinded-status-effect/"><em>Broken Buffs</em></a>
+<a href="http://forums.obsidian.net/topic/73618-getting-rid-of-blinded-status-effect/"><em>Broken Buffs</em></a><br/>
 
-<a href="http://www.rockpapershotgun.com/2015/03/31/the-emperors-borked-clothes-pillars-of-eternity-uber-bug/"><em>Broken Inventory Bug</em></a>
+<a href="http://www.rockpapershotgun.com/2015/03/31/the-emperors-borked-clothes-pillars-of-eternity-uber-bug/"><em>Broken Inventory Bug</em></a><br/>
 
-<em>Bonus stuff that didn't make the article:</em>
+<em>Bonus stuff that didn't make the article:</em><br/>
 
-<em>- Formations orient from the direction you started and not from the direction your characters pathed from.</em>
+<em>- Formations orient from the direction you started and not from the direction your characters pathed from.</em><br/>
 
-<em>- Selection bugs out (eg. click on a character portrait and instead of selecting that character, the selected character walks under the portrait).</em>
+<em>- Selection bugs out (eg. click on a character portrait and instead of selecting that character, the selected character walks under the portrait).</em><br/>
 
-<em>- During a quick save the screen is paused but the map scroll arrows are still being read. I often hold them down so that the screen starts moving when the save is done and instead the screen is teleported to a corner of the map.</em>
+<em>- During a quick save the screen is paused but the map scroll arrows are still being read. I often hold them down so that the screen starts moving when the save is done and instead the screen is teleported to a corner of the map.</em><br/>
 
-<em>- In some places small parts of the environment that look pathable are not.</em>
+<em>- In some places small parts of the environment that look pathable are not.</em><br/>
 
-<em>- When examining items it opens three windows and then wont open any more until you close one, but it opens them directly on top of each other.</em>
+<em>- When examining items it opens three windows and then wont open any more until you close one, but it opens them directly on top of each other.</em><br/>
