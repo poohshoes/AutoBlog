@@ -117,19 +117,35 @@ namespace SiteBuilter
                     outputPath = Path.Combine(indexOutputDirectory, "index.html");
                     output = output.Replace("BLOG_TOKEN", "blogs/")
                                    .Replace("INDEX_TOKEN", "")
-                                   .Replace("IMAGE_TOKEN", "blogImages/");
+                                   .Replace("IMAGE_TOKEN", "images/");
                 }
                 else
                 {
                     outputPath = Path.Combine(blogOutputDirectory, blogs[i].FileName + ".html");
                     output = output.Replace("BLOG_TOKEN", "")
                                    .Replace("INDEX_TOKEN", "../")
-                                   .Replace("IMAGE_TOKEN", "../blogImages/");
+                                   .Replace("IMAGE_TOKEN", "../images/");
                 }
                 File.WriteAllText(outputPath, output);
             }
 
-            // TODO(ian): Copy all the files in extras
+            CopyFilesRecusive(Path.Combine(resourcePath, "extras"), Path.Combine(indexOutputDirectory));
+        }
+
+        internal static void CopyFilesRecusive(string from, string to)
+        {
+            if (!Directory.Exists(to))
+            {
+                Directory.CreateDirectory(to);
+            }
+            foreach (string directory in Directory.EnumerateDirectories(from))
+            {
+                CopyFilesRecusive(directory, Path.Combine(to, Path.GetFileName(directory)));
+            }
+            foreach (string file in Directory.EnumerateFiles(from))
+            {
+                File.Copy(file, Path.Combine(to, Path.GetFileName(file)), true);
+            }
         }
     }
 }
