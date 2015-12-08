@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using System.Drawing;
 
 namespace SiteBuilter
 {
@@ -144,6 +145,16 @@ namespace SiteBuilter
             }
             foreach (string file in Directory.EnumerateFiles(from))
             {
+                string extension = Path.GetExtension(file);
+                if (extension == "png" || extension == "jpg")
+                {
+                    int MaxImageWidth = 915;
+                    // TODO(ian): Warning for images over the max size.
+
+                    //Image img = new Bitmap("test.png");
+                    //Console.WriteLine(img.Width + " x " + img.Height);
+                }
+
                 File.Copy(file, Path.Combine(to, Path.GetFileName(file)), true);
             }
         }
