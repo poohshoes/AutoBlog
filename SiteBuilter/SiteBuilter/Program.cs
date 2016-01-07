@@ -91,6 +91,7 @@ namespace SiteBuilter
             blogs.Sort(BlogInfo.Comparer);
 
             string sidebar = "";
+            List<string> links = new List<string>();
             for (int i = 0; i < blogs.Count; i++)
             {
                 string link = "BLOG_TOKEN" + blogs[i].FileName + ".html";
@@ -98,6 +99,7 @@ namespace SiteBuilter
                 {
                     link = "INDEX_TOKENindex.html";
                 }
+                links.Add(link);
                 sidebar += String.Format("<a href=\"{0}\">{1}</a><br/><hr/>\n", link, blogs[i].Header);
             }
 
@@ -112,6 +114,23 @@ namespace SiteBuilter
             {
                 string output = template.Replace("INSERT_BLOG_HERE", blogs[i].Text);
                 output = output.Replace("INSERT_SIDEBAR_HERE", sidebar);
+                
+                if (i == 0)
+                {
+                    if (blogs.Count != 1)
+                    {
+                        output = output.Replace("INSERT_BACK_NEXT_LINKS_HERE", "<a href=\"" + links[i + 1] + "\">&lt;-- " + blogs[i + 1].Header + "</a>");
+                    }
+                }
+                else if (i != blogs.Count - 1)
+                {
+                    output = output.Replace("INSERT_BACK_NEXT_LINKS_HERE", "<a href=\"" + links[i + 1] + "\">&lt;-- " + blogs[i + 1].Header + "</a><span style=\"float:right;\"><a href=\"" + links[i - 1] + "\">" + blogs[i - 1].Header + " --&gt;</a></span>");
+                }
+                else
+                {
+                    output = output.Replace("INSERT_BACK_NEXT_LINKS_HERE", "<div style=\"text-align:right\"><a href=\"" + links[i - 1] + "\">" + blogs[i - 1].Header + " --&gt;</a></div>");
+                }
+
                 string outputPath;
                 if (i == 0)
                 {
@@ -127,6 +146,7 @@ namespace SiteBuilter
                                    .Replace("INDEX_TOKEN", "../")
                                    .Replace("IMAGE_TOKEN", "../images/");
                 }
+
                 File.WriteAllText(outputPath, output);
             }
 
