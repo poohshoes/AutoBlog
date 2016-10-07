@@ -27,6 +27,7 @@ namespace SiteBuilter
         {
             string resourcePath = "..\\..\\..\\..";
             string template = File.ReadAllText(Path.Combine(resourcePath, "template.html"));
+            string indexTemplate = File.ReadAllText(Path.Combine(resourcePath, "indexTemplate.html"));
 
             var blogs = new List<BlogInfo>();
             foreach(string blogFile in Directory.EnumerateFiles(Path.Combine(resourcePath, "blogs")))
@@ -95,10 +96,6 @@ namespace SiteBuilter
             for (int i = 0; i < blogs.Count; i++)
             {
                 string link = "BLOG_TOKEN" + blogs[i].FileName + ".html";
-                if (i == 0)
-                {
-                    link = "INDEX_TOKENindex.html";
-                }
                 links.Add(link);
                 sidebar += String.Format("<a href=\"{0}\">{1}</a><br/><hr/>\n", link, blogs[i].Header);
             }
@@ -109,7 +106,10 @@ namespace SiteBuilter
             {
                 Directory.CreateDirectory(blogOutputDirectory);
             }
-            
+
+            string indexOutputPath = Path.Combine(indexOutputDirectory, "index.html");
+            indexTemplate = indexTemplate.Replace("FIRST_BLOG_URL", Path.Combine("blogs", blogs[0].FileName + ".html"));
+            File.WriteAllText(indexOutputPath, indexTemplate);
             for(int i = 0; i < blogs.Count; i++)
             {
                 string output = template.Replace("INSERT_BLOG_HERE", blogs[i].Text);
@@ -131,29 +131,17 @@ namespace SiteBuilter
                     output = output.Replace("INSERT_BACK_NEXT_LINKS_HERE", "<div style=\"text-align:right\"><a href=\"" + links[i - 1] + "\">" + blogs[i - 1].Header + " --&gt;</a></div>");
                 }
 
-                string outputPath;
-                if (i == 0)
-                {
-                    outputPath = Path.Combine(indexOutputDirectory, "index.html");
-                    output = output.Replace("BLOG_TOKEN", "blogs/")
-                                   .Replace("INDEX_TOKEN", "")
-                                   .Replace("IMAGE_TOKEN", "images/");
-                }
-                else
-                {
-                    outputPath = Path.Combine(blogOutputDirectory, blogs[i].FileName + ".html");
-                    output = output.Replace("BLOG_TOKEN", "")
-                                   .Replace("INDEX_TOKEN", "../")
-                                   .Replace("IMAGE_TOKEN", "../images/");
-                }
-
+                string outputPath = Path.Combine(blogOutputDirectory, blogs[i].FileName + ".html");
+                output = output.Replace("BLOG_TOKEN", "")
+                                .Replace("INDEX_TOKEN", "../")
+                                .Replace("IMAGE_TOKEN", "../images/");
                 File.WriteAllText(outputPath, output);
             }
 
-            CopyFilesRecusive(Path.Combine(resourcePath, "extras"), Path.Combine(indexOutputDirectory));
+            CopyFilesRecursive(Path.Combine(resourcePath, "extras"), Path.Combine(indexOutputDirectory));
         }
 
-        internal static void CopyFilesRecusive(string from, string to)
+        internal static void CopyFilesRecursive(string from, string to)
         {
             if (!Directory.Exists(to))
             {
@@ -161,7 +149,7 @@ namespace SiteBuilter
             }
             foreach (string directory in Directory.EnumerateDirectories(from))
             {
-                CopyFilesRecusive(directory, Path.Combine(to, Path.GetFileName(directory)));
+                CopyFilesRecursive(directory, Path.Combine(to, Path.GetFileName(directory)));
             }
             foreach (string file in Directory.EnumerateFiles(from))
             {
