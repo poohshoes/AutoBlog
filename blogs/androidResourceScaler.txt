@@ -15,9 +15,6 @@ import javax.imageio.ImageIO;
  
 public class ResourceGenerator {
      
-    /**
-    * @param args
-    */
     public static void main(String[] args) {
         if(args.length < 2 || args.length > 3 || (args.length == 3 && !args[2].equals("-overwrite"))){
             System.out.println("Resource Generator will take resources from one of your ldpi, mdpi, hdpi, xhdpi, or xxhdpi resource folders and generate default resources of the correct size for any other of those folders.");
