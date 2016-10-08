@@ -354,7 +354,6 @@ namespace SiteBuilter
                             charIndex > 0 &&
                             line[charIndex - 1] == '/')
                         {
-                            currentToken.Value += character;
                             currentToken.Type = TokenType.SingleLineComment;
                         }
 
@@ -395,6 +394,10 @@ namespace SiteBuilter
                         else if (newTokenType == TokenType.String)
                         {
                             currentToken.Type = newTokenType;
+                        }
+                        else if (newTokenType == TokenType.SingleLineComment)
+                        {
+                            curren
                         }
                     }
 
