@@ -23,36 +23,113 @@ namespace SiteBuilter
 
     class Program
     {
+        static List<string> Warnings = new List<string>();
+
         static void Main(string[] args)
         {
             string resourcePath = "..\\..\\..\\..";
             string template = File.ReadAllText(Path.Combine(resourcePath, "template.html"));
             string indexTemplate = File.ReadAllText(Path.Combine(resourcePath, "indexTemplate.html"));
 
+            List<string> codeBlockLines = new List<string>();
             var blogs = new List<BlogInfo>();
             foreach(string blogFile in Directory.EnumerateFiles(Path.Combine(resourcePath, "blogs")))
             {
                 bool inCodeBlock = false;
                 var newBlogInfo = new BlogInfo();
                 newBlogInfo.Text = "";
-                int i = 0;
-                foreach(string inputLine in File.ReadAllLines(blogFile))
+                string[] fileLines = File.ReadAllLines(blogFile);
+                for (int lineIndex = 0;
+                    lineIndex < fileLines.Length;
+                    lineIndex++)
                 {
-                    if (i == 0)
+                    string inputLine = fileLines[lineIndex];
+                    if (lineIndex == 0)
                     {
                         newBlogInfo.Date = DateTime.Parse(inputLine);
                         newBlogInfo.Text += "<h6>" + inputLine + "</h6>\n";
                     }
-                    else if (i == 1)
+                    else if (lineIndex == 1)
                     {
                         newBlogInfo.Header = inputLine;
                         newBlogInfo.Text += "<h2>" + inputLine + "</h2>\n";
                     }
-                    else if(inputLine != "")
+                    else if (inputLine != "")
                     {
-                        if (inputLine.Contains("<code>"))
+                        //if (inCodeBlock)
+                        //{
+                        //    int tokenStart = -1;
+                        //    for (int charIndex = 0;
+                        //        charIndex < inputLine.Length;
+                        //        charIndex++)
+                        //    {
+                        //        char character = inputLine[charIndex];
+                        //        if (tokenStart == -1)
+                        //        {
+                        //            // Note(ian): Look for start of token.
+                        //            if (char.IsLetterOrDigit(character))
+                        //            {
+                        //                tokenStart = charIndex;
+                        //            }
+                        //        }
+                        //        else
+                        //        {
+                        //            string commentColor = "#608b4e";
+                        //            string keywordColor = "#569cd6";
+                        //            string stringColor = "#d69d83";
+                        //            // Note(ian): Look for end of token.
+                        //            if (!char.IsLetterOrDigit(character))
+                        //            {
+                        //                string token = inputLine.Substring(tokenStart, charIndex - tokenStart);
+                        //                string tokenColor = string.Empty;
+                        //                if (token == "if" ||
+                        //                    token == "else" ||
+                        //                    token == "do" ||
+                        //                    token == "while" ||
+                        //                    token == "for" ||
+
+                        //                    token == "int" ||
+                        //                    token == "string" ||
+                        //                    token == "float" ||
+                        //                    token == "double" ||
+
+                        //                    token == "public" ||
+                        //                    token == "private" ||
+                        //                    token == "static" ||
+                        //                    token == "internal" ||
+
+                        //                    token == "package" ||
+                        //                    token == "class" ||
+                        //                    token == "struct" ||
+                        //                    token == "void" ||
+                        //                    token == "base" ||
+                        //                    token == "throws")
+                        //                {
+                        //                    tokenColor = keywordColor;
+                        //                }
+                        //                if(tokenColor != string.Empty)
+                        //                {
+                        //                    string preTag = "<span style=\" color:" + tokenColor + " \">";
+                        //                    string postTag = "</span>";
+
+                        //                    inputLine = inputLine.Insert(charIndex, postTag);
+                        //                    inputLine = inputLine.Insert(tokenStart, preTag);
+                        //                    charIndex += preTag.Length + postTag.Length;
+                        //                }
+                        //                tokenStart = -1;
+                        //            }
+                        //        }
+                        //    }
+                        //}
+                                                
+                        if (inputLine.Contains("</code>"))
                         {
-                            inCodeBlock = true;
+                            inCodeBlock = false;
+                            foreach (string codeBlockLine in FormatCode(codeBlockLines))
+                            {
+                                newBlogInfo.Text += codeBlockLine + "<br/>\n";
+                            }
+                            codeBlockLines.Clear();
                         }
 
                         int j = 0;
@@ -62,9 +139,11 @@ namespace SiteBuilter
                             j++;
                             toAdd += "&nbsp;";
                         }
+
                         if (inCodeBlock)
                         {
-                            newBlogInfo.Text += toAdd + inputLine.Substring(j) + "<br/>\n";
+                            //newBlogInfo.Text += toAdd + inputLine.Substring(j) + "<br/>\n";
+                            codeBlockLines.Add(inputLine);
                         }
                         else
                         {
@@ -78,12 +157,11 @@ namespace SiteBuilter
                             }
                         }
 
-                        if (inputLine.Contains("</code>"))
+                        if (inputLine.Contains("<code>"))
                         {
-                            inCodeBlock = false;
+                            inCodeBlock = true;
                         }
                     }
-                    i++;
                 }
                 newBlogInfo.FileName = Path.GetFileNameWithoutExtension(blogFile);
                 blogs.Add(newBlogInfo);
@@ -139,6 +217,15 @@ namespace SiteBuilter
             }
 
             CopyFilesRecursive(Path.Combine(resourcePath, "extras"), Path.Combine(indexOutputDirectory));
+
+            if (Warnings.Count > 0)
+            {
+                foreach (string warning in Warnings)
+                {
+                    Console.WriteLine(warning);
+                }
+                Console.ReadLine();
+            }
         }
 
         internal static void CopyFilesRecursive(string from, string to)
@@ -165,6 +252,291 @@ namespace SiteBuilter
 
                 File.Copy(file, Path.Combine(to, Path.GetFileName(file)), true);
             }
+        }
+
+        private enum TokenType
+        {
+            Unknown,
+            Semicolon,
+            LeftParenthesis,
+            RightParenthesis,
+            LeftBracket,
+            RightBracket,
+            LeftBrace,
+            RightBrace,
+            NewLine,
+            String,
+            SingleLineComment,
+        }
+
+        private class Token
+        {
+            public TokenType Type;
+            public string Value = "";
+        }
+
+        private static List<string> FormatCode(List<string> codeLines)
+        {
+            var tokens = new List<Token>();
+            Token currentToken = new Token();
+            for (int codeLineIndex = 0;
+                codeLineIndex < codeLines.Count;
+                codeLineIndex++)
+            {
+                string line = codeLines[codeLineIndex];
+                for (int charIndex = 0;
+                    charIndex < line.Length;
+                    charIndex++)
+                {
+                    char character = line[charIndex];
+
+                    if (currentToken.Type == TokenType.String)
+                    {
+                        int numPreviousBackSlashes = 0;
+                        for (int backwardsCharIndex = charIndex - 1;
+                            backwardsCharIndex >= 0 && line[backwardsCharIndex] == '\\';
+                            backwardsCharIndex--)
+                        {
+                            numPreviousBackSlashes++;
+                        }
+                        char previousCharacter = line[charIndex - 1];
+                        if (character == '"' && (numPreviousBackSlashes % 2) == 0)
+                        {
+                            tokens.Add(currentToken);
+                            currentToken = new Token();
+                        }
+                        else
+                        {
+                            currentToken.Value += character;
+
+                            if(charIndex == line.Length - 1)
+                            {
+                                Warnings.Add("Code Lexer: Multi line strings not handled!");
+                            }
+                        }
+                    }
+                    else if (currentToken.Type == TokenType.Unknown)
+                    {
+                        TokenType newTokenType = TokenType.Unknown;
+                        if (character == '"')
+                        {
+                            newTokenType = TokenType.String;
+                        }
+                        if (character == ';')
+                        {
+                            newTokenType = TokenType.Semicolon;
+                        }
+                        else if (character == '(')
+                        {
+                            newTokenType = TokenType.LeftParenthesis;
+                        }
+                        else if (character == ')')
+                        {
+                            newTokenType = TokenType.RightParenthesis;
+                        }
+                        else if (character == '{')
+                        {
+                            newTokenType = TokenType.LeftBrace;
+                        }
+                        else if (character == '}')
+                        {
+                            newTokenType = TokenType.RightBrace;
+                        }
+                        else if (character == '[')
+                        {
+                            newTokenType = TokenType.LeftBracket;
+                        }
+                        else if (character == ']')
+                        {
+                            newTokenType = TokenType.RightBracket;
+                        }
+                        else if (character == '/' &&
+                            charIndex > 0 &&
+                            line[charIndex - 1] == '/')
+                        {
+                            currentToken.Value += character;
+                            currentToken.Type = TokenType.SingleLineComment;
+                        }
+
+                        if (newTokenType == TokenType.Unknown &&
+                            !char.IsWhiteSpace(character))
+                        {
+                            currentToken.Value += character;
+
+                            if (currentToken.Value == "//")
+                            {
+                                currentToken.Type = TokenType.SingleLineComment;
+                            }
+                        }
+
+                        if (charIndex == line.Length - 1 ||
+                            newTokenType != TokenType.Unknown ||
+                            char.IsWhiteSpace(character))
+                        {
+                            if (currentToken.Value != string.Empty)
+                            {
+                                tokens.Add(currentToken);
+                                currentToken = new Token();
+                            }
+                        }
+
+                        if (newTokenType == TokenType.Semicolon ||
+                            newTokenType == TokenType.LeftParenthesis ||
+                            newTokenType == TokenType.RightParenthesis ||
+                            newTokenType == TokenType.LeftBrace ||
+                            newTokenType == TokenType.RightBrace ||
+                            newTokenType == TokenType.LeftBracket ||
+                            newTokenType == TokenType.RightBracket)
+                        {
+                            currentToken.Type = newTokenType;
+                            tokens.Add(currentToken);
+                            currentToken = new Token();
+                        }
+                        else if (newTokenType == TokenType.String)
+                        {
+                            currentToken.Type = newTokenType;
+                        }
+                    }
+
+                    if (charIndex == line.Length - 1)
+                    {
+                        Token newLineToken = new Token();
+                        newLineToken.Type = TokenType.NewLine;
+                        tokens.Add(newLineToken);
+                    }
+                }
+            }
+
+            //foreach (Token token in tokens)
+            //{
+            //    Console.WriteLine(token.Type.ToString() + " " + token.Value);
+            //    Console.ReadLine();
+            //}
+
+            List<string> output = new List<string>();
+            string currentLine = "";
+            int indentChange = 0;
+            int currentIndent = 0;
+            for (int tokenIndex = 0;
+                tokenIndex < tokens.Count;
+                tokenIndex++)
+            {
+                Token token = tokens[tokenIndex];
+                Token nextToken = null;
+                if ((tokenIndex + 1) < tokens.Count)
+                {
+                    nextToken = tokens[tokenIndex + 1];
+                }
+                string commentColor = "#608b4e";
+                string keywordColor = "#569cd6";
+                string stringColor = "#d69d83";
+                switch (token.Type)
+                {
+                    case TokenType.String:
+                        {
+                            string preTag = "<span style=\" color:" + stringColor + " \">";
+                            string postTag = "</span>";
+                            currentLine += preTag + "\"" + token.Value + "\"" + postTag;
+                        }
+                        break;
+                    case TokenType.Unknown:
+                        {
+                            string tokenColor = string.Empty;
+                            if (token.Value == "if" ||
+                                token.Value == "else" ||
+                                token.Value == "do" ||
+                                token.Value == "while" ||
+                                token.Value == "for" ||
+
+                                token.Value == "int" ||
+                                token.Value == "string" ||
+                                token.Value == "float" ||
+                                token.Value == "double" ||
+                                token.Value == "String" ||
+                                token.Value == "bool" ||
+                                token.Value == "boolean" ||
+
+                                token.Value == "public" ||
+                                token.Value == "private" ||
+                                token.Value == "static" ||
+                                token.Value == "internal" ||
+                                token.Value == "void" ||
+                                token.Value == "main" ||
+                                token.Value == "abstract" ||
+                                token.Value == "virtual" ||
+                                token.Value == "override" ||
+                                token.Value == "type" ||
+
+                                token.Value == "package" ||
+                                token.Value == "import" ||
+                                token.Value == "using" ||
+                                token.Value == "include" ||
+                                token.Value == "class" ||
+                                token.Value == "struct" ||
+                                token.Value == "base" ||
+                                token.Value == "throws" ||
+                                token.Value == "return" ||
+                                token.Value == "yeild")
+                            {
+                                tokenColor = keywordColor;
+                            }
+                            string preTag = "";
+                            string postTag = "";
+                            if (tokenColor != string.Empty)
+                            {
+                                preTag = "<span style=\" color:" + tokenColor + " \">";
+                                postTag = "</span>";
+                            }
+
+                            currentLine += preTag + token.Value + postTag;
+                            if (nextToken != null &&
+                                nextToken.Type == TokenType.Unknown)
+                            {
+                                currentLine += " ";
+                            }
+                        }
+                        break;
+                    case TokenType.Semicolon:
+                        currentLine += ";";
+                        break;
+                    case TokenType.LeftParenthesis:
+                        currentLine += "(";
+                        break;
+                    case TokenType.RightParenthesis:
+                        currentLine += ")";
+                        break;
+                    case TokenType.LeftBracket:
+                        currentLine += "[";
+                        break;
+                    case TokenType.RightBracket:
+                        currentLine += "]";
+                        break;
+                    case TokenType.LeftBrace:
+                        currentLine += "{";
+                        indentChange++;
+                        break;
+                    case TokenType.RightBrace:
+                        currentLine += "}";
+                        currentIndent--;
+                        break;
+                    case TokenType.NewLine:
+                        string oneIndent = "&nbsp;&nbsp;&nbsp;&nbsp;";
+                        string toAdd = "";
+                        for (int indentIndex = 0;
+                            indentIndex < currentIndent;
+                            indentIndex++)
+                        {
+                            toAdd += oneIndent;
+                        }
+                        output.Add(toAdd + currentLine);
+                        currentLine = "";
+                        currentIndent += indentChange;
+                        indentChange = 0;
+                        break;
+                }
+            }
+
+            return output;
         }
     }
 }
