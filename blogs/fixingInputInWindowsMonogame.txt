@@ -1,0 +1,368 @@
+Oct 11, 2016
+Fixing Bad Input in Monogame
+
+When monogame detects key and mouse button presses and packs them up for the user they lose important data.  If you want to detect button presses then you call GetState for either the keyboard or mouse and compare it to the state that you have stored from last update.  This becomes a problem if between the beginning of two updates (usually due to lag) a button can go both down and up then the whole button press is missed.  The operating system sends a message for each up or down button action that can be used to detect all button presses which is how games traditionally handle button presses.
+
+<img src="IMAGE_TOKENmonogameInputEventDrop.png" />
+
+Most games won't release with much lag but there are many reasons why this can be a problem even if your game has no lag.
+- the computer starts doing a scheduled update or some other nonsense
+- the player has an old computer
+- I have a performance tool built into my game but if it lags I can no longer interact with it, but I'm using it because the game is lagging and I'm trying to find out why
+- the game was built in debug mode to find bugs
+
+Monogame has already tapped into operating system messages for button presses and I get the same messages by plugging on my own event handlers.  This is a windows only solution but I expect you could come up with similar solutions for the other builds.
+
+So first let's tie into those Operating System messages in WinFormsGameWindow.cs
+<code>
+internal WinFormsGameWindow(WinFormsGamePlatform platform)
+{
+    ...            
+    // Use RawInput to capture key events.
+    Device.RegisterDevice(UsagePage.Generic, UsageId.GenericKeyboard, DeviceFlags.None);
+    Device.KeyboardInput += OnRawKeyEvent;
+    // Note(ian): Custom KC code
+    Device.KeyboardInput += KradensCryptCustomKeyEvent;
+    Device.RegisterDevice(UsagePage.Generic, UsageId.GenericMouse, DeviceFlags.None);
+    Device.MouseInput += KradensCryptCustomMouseEvent;
+    // End custom KC stuff.
+    ...
+}
+
+private void KradensCryptCustomMouseEvent(object sender, MouseInputEventArgs e)
+{
+    KradensCryptCustomMouseData data = new KradensCryptCustomMouseData();
+    data.ButtonFlags = (ushort)e.ButtonFlags;
+    data.Buttons = e.Buttons;
+    data.ExtraInformation = e.ExtraInformation;
+    data.Mode = (ushort)e.Mode;
+    data.WheelDelta = e.WheelDelta;
+    data.DeltaX = e.X;
+    data.DeltaY = e.Y;
+    KradensCryptCustomMouseEvent(data);
+}
+
+private void KradensCryptCustomKeyEvent(object sender, KeyboardInputEventArgs e)
+{
+    KradensCryptCustomKeyData data = new KradensCryptCustomKeyData();
+    data.Key = e.Key;//.ToString();
+    data.MakeCode = e.MakeCode;
+    data.ScanCodeFlags = (ushort)e.ScanCodeFlags;
+    data.State = (uint)e.State;
+    data.ExtraInformation = e.ExtraInformation;
+    KradensCryptCustomKeyEvent(data);
+}
+</code>
+
+The custom events are defined in GameWindow.cs so they could perhaps be cross platform at some point.
+<code>
+public delegate void KradensCryptKeyEventDelegate(KradensCryptCustomKeyData data);
+public event KradensCryptKeyEventDelegate KradensCryptKeyEvent;
+public void KradensCryptCustomKeyEvent(KradensCryptCustomKeyData data)
+{
+    if (KradensCryptKeyEvent != null)
+    {
+        KradensCryptKeyEvent(data);
+    }
+}
+
+public delegate void KradensCryptMouseEventDelegate(KradensCryptCustomMouseData data);
+public event KradensCryptMouseEventDelegate KradensCryptMouseEvent;
+public void KradensCryptCustomMouseEvent(KradensCryptCustomMouseData data)
+{
+    if (KradensCryptMouseEvent != null)
+    {
+        KradensCryptMouseEvent(data);
+    }
+}
+</code>
+
+One of these data classes will be instantiated for each button event.
+<code>    
+public class KradensCryptCustomKeyData
+{
+    public int ExtraInformation;
+    public System.Windows.Forms.Keys Key;
+    public int MakeCode;
+    public ushort ScanCodeFlags;
+    public uint State;
+}
+
+public class KradensCryptCustomMouseData
+{
+    // Note(ian): Maps to enum MouseButtonFlags.
+    public ushort ButtonFlags;
+    public int Buttons;
+    public int ExtraInformation;
+    // Note(ian): Maps to enum MouseMode
+    public ushort Mode;
+    public int WheelDelta;
+    public int DeltaX;
+    public int DeltaY;
+}
+</code>
+
+Now we move out of Monogame codebase back into my codebase, in my Game objects constructor:
+<code>
+// Input is my own custom class where I keep my input handling functions and data.
+input = new Input.Input();
+Window.KradensCryptKeyEvent += input.RawKeyboardEvent;
+Window.KradensCryptMouseEvent += input.RawMouseEvent;
+</code>
+
+This event handling code is copied mostly from the Monogame project where it converts the input.
+<code>
+public enum SharpDXScanCodeFlags : short
+{
+    Make = 0,
+    Break = 1,
+    E0 = 2,
+    E1 = 4
+}
+
+public enum MonogameKeyState
+{
+    VirtualKeyToItem = 46,
+    SetHotKey = 50,
+    GetHotKey = 51,
+    KeyFirst = 256,
+    KeyDown = 256,
+    KeyUp = 257,
+    SystemKeyDown = 260,
+    SystemKeyUp = 261,
+    KeyLast = 265,
+    ImeKeyLast = 271,
+    ImeKeyDown = 656,
+    ImeKeyUp = 657,
+    HotKey = 786
+}
+
+public enum SharpDXMouseButtonFlags
+{
+    None = 0,
+    LeftButtonDown = 1,
+    Button1Down = 1,
+    LeftButtonUp = 2,
+    Button1Up = 2,
+    RightButtonDown = 4,
+    Button2Down = 4,
+    RightButtonUp = 8,
+    Button2Up = 8,
+    MiddleButtonDown = 16,
+    Button3Down = 16,
+    MiddleButtonUp = 32,
+    Button3Up = 32,
+    Button4Down = 64,
+    Button4Up = 128,
+    Button5Down = 256,
+    Button5Up = 512,
+    MouseWheel = 1024
+}
+
+public enum SharpDXMouseMode
+{
+    MoveRelative = 0,
+    MoveAbsolute = 1,
+    VirtualDesktop = 2,
+    AttributesChanged = 4,
+    MoveNoCoalesce = 8
+}
+
+public class InputData
+{
+    // Note(ian): If the event's aren't coming in order and we are getting the wrong KeyDown states we should move to a HalfSteps system.
+    public Dictionary<Keys, bool> KeysDown = new Dictionary<Keys, bool>();
+    public List<Keys> KeyDownEvents = new List<Keys>();
+    public List<Keys> KeyUpEvents = new List<Keys>();
+    public const int NumMouseButtons = 5;
+    public bool[] MouseButtonsDown = new bool[NumMouseButtons];
+    public List<int> MouseButtonDownEvents = new List<int>();
+    public List<int> MouseButtonUpEvents = new List<int>();
+    public Vector2 MousePosition = new Vector2();
+    public int ScrollWheelDelta;
+
+    internal void Clear()
+    {
+        KeysDown.Clear();
+        KeyDownEvents.Clear();
+        KeyUpEvents.Clear();
+        MouseButtonDownEvents.Clear();
+        MouseButtonUpEvents.Clear();
+        for (int i = 0;
+            i < NumMouseButtons;
+            i++)
+        {
+            MouseButtonsDown[i] = false;
+        }
+        ScrollWheelDelta = 0;
+    }
+}
+
+public InputData CollectionDataSet = new InputData();
+public InputData ActiveDataSet = new InputData();
+
+public void RawKeyboardEvent(KradensCryptCustomKeyData data)
+{
+    Keys key;
+    switch (data.MakeCode)
+    {
+    case 0x2a: // LShift
+        key = Keys.LeftShift;
+        break;
+    case 0x36: // RShift
+        key = Keys.RightShift;
+        break;
+    case 0x1d: // Ctrl
+        key = (((SharpDXScanCodeFlags)data.ScanCodeFlags) & SharpDXScanCodeFlags.E0) != 0 ? Keys.RightControl : Keys.LeftControl;
+        break;
+    case 0x38: // Alt
+        key = (((SharpDXScanCodeFlags)data.ScanCodeFlags) & SharpDXScanCodeFlags.E0) != 0 ? Keys.RightAlt : Keys.LeftAlt;
+        break;
+    default:
+        key = (Keys)data.Key;
+        break;
+    }
+    
+    MonogameKeyState keyStates = (MonogameKeyState)data.State;
+    switch (keyStates)
+    {
+    case MonogameKeyState.KeyDown:
+    case MonogameKeyState.SystemKeyDown:
+    case MonogameKeyState.ImeKeyDown:
+        lock (CollectionDataSet)
+        {
+            CollectionDataSet.KeysDown[key] = true;
+            CollectionDataSet.KeyDownEvents.Add(key);
+        }
+        break;
+    case MonogameKeyState.KeyUp:
+    case MonogameKeyState.SystemKeyUp:
+    case MonogameKeyState.ImeKeyUp:
+        lock (CollectionDataSet)
+        {
+            CollectionDataSet.KeysDown[key] = false;
+            CollectionDataSet.KeyUpEvents.Add(key);
+        }
+        break;
+    }
+}
+
+public void RawMouseEvent(KradensCryptCustomMouseData data)
+{    
+    CollectionDataSet.ScrollWheelDelta += data.WheelDelta;
+
+    SharpDXMouseButtonFlags flags = (SharpDXMouseButtonFlags)data.ButtonFlags;
+    if (flags.HasFlags(SharpDXMouseButtonFlags.Button1Down))
+    {
+        AddMouseButtonData(true, 0);
+    }
+    if (flags.HasFlags(SharpDXMouseButtonFlags.Button1Up))
+    {
+        AddMouseButtonData(false, 0);
+    }
+    if (flags.HasFlags(SharpDXMouseButtonFlags.Button2Down))
+    {
+        AddMouseButtonData(true, 1);
+    }
+    if (flags.HasFlags(SharpDXMouseButtonFlags.Button2Up))
+    {
+        AddMouseButtonData(false, 1);
+    }
+    if (flags.HasFlags(SharpDXMouseButtonFlags.Button3Down))
+    {
+        AddMouseButtonData(true, 2);
+    }
+    if (flags.HasFlags(SharpDXMouseButtonFlags.Button3Up))
+    {
+        AddMouseButtonData(false, 2);
+    }
+    if (flags.HasFlags(SharpDXMouseButtonFlags.Button4Down))
+    {
+        AddMouseButtonData(true, 3);
+    }
+    if (flags.HasFlags(SharpDXMouseButtonFlags.Button4Up))
+    {
+        AddMouseButtonData(false, 3);
+    }
+    if (flags.HasFlags(SharpDXMouseButtonFlags.Button5Down))
+    {
+        AddMouseButtonData(true, 4);
+    }
+    if (flags.HasFlags(SharpDXMouseButtonFlags.Button5Up))
+    {
+        AddMouseButtonData(false, 4);
+    }
+}
+
+private void AddMouseButtonData(bool isDown, int index)
+{
+    lock(CollectionDataSet)
+    {
+        CollectionDataSet.MouseButtonsDown[index] = isDown;
+        if (isDown)
+        {
+            CollectionDataSet.MouseButtonDownEvents.Add(index);
+        }
+        else
+        {
+            CollectionDataSet.MouseButtonUpEvents.Add(index);
+        }
+    }
+}
+</code>
+
+Two sets of input data are stored so that if a press event comes in after an update has already started then it won't be skipped.  CollectionDataSet is used to store events and ActiveDataSet is used when checking for input, these are swapped at the beginning of each update.
+<code>        
+internal void SwapInputBuffers()
+{
+    lock(CollectionDataSet)
+    {
+        var temp = CollectionDataSet;
+        CollectionDataSet = ActiveDataSet;
+        ActiveDataSet = temp;
+        CollectionDataSet.KeyDownEvents.Clear();
+        CollectionDataSet.KeyUpEvents.Clear();
+        CollectionDataSet.MouseButtonDownEvents.Clear();
+        CollectionDataSet.MouseButtonUpEvents.Clear();
+        CollectionDataSet.ScrollWheelDelta = 0;
+        CollectionDataSet.MousePosition.X = ActiveDataSet.MousePosition.X;
+        CollectionDataSet.MousePosition.Y = ActiveDataSet.MousePosition.Y;
+        foreach (Keys key in ActiveDataSet.KeysDown.Keys)
+        {
+            CollectionDataSet.KeysDown[key] = ActiveDataSet.KeysDown[key];
+        }
+        for (int i = 0;
+            i < InputData.NumMouseButtons;
+            i++)
+        {
+            CollectionDataSet.MouseButtonsDown[i] = ActiveDataSet.MouseButtonsDown[i];
+        }
+    }
+}
+</code>
+
+And finally to check button presses:
+<code>
+internal bool KeyIsDown_(Keys key)
+{
+    return ActiveDataSet.KeysDown.ContainsKey(key) && ActiveDataSet.KeysDown[key];
+}
+
+internal bool KeyToggledUp_(Keys key)
+{
+    return ActiveDataSet.KeyUpEvents.Contains(key);
+}
+
+internal bool KeyToggledDown_(Keys key)
+{
+    return ActiveDataSet.KeyDownEvents.Contains(key);
+}
+</code>
+
+Phew that is a lot of code for a blog post but it's mostly joinery and only at the end, where we do some processing of the events, is there more complex code and that is mostly copy pasted from how Monogame handles it.  Note that this does not give us the mouse position or scroll wheel change.
+
+Of course Monogame is an open source project so the onus should be on me to go in and fix this for everybody but I have some excuses:
+- I'm currently using an old version of Monogame so I would have to update my game to the latest version which has caused issues in the past (I'm not even sure how to check the version because I'm compiling from the source)
+- My changes wouldn't be backwards compatible
+- I would have to figure out how to do this for all of the build targets, not just windows
+- I'm madly trying to finish my own game

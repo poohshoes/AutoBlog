@@ -9,7 +9,7 @@ This mistake gives you more range above your character and less below.  The easy
 
 <img src="IMAGE_TOKENRedCircleFloor.gif" />
 
-Here's what the debug mode looks like with the fixed hammer, instead of following the hammer the collision shape is projected to the floor.  Also note the player’s collision circle is at their feet.
+Here's what the debug mode looks like with the fixed hammer, instead of following the hammer the collision shape is projected to the floor.  Also note the player's collision circle is at their feet.
 
 <img src="IMAGE_TOKENKCHammerWithDebug.gif" />
 

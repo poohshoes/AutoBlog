@@ -56,72 +56,6 @@ namespace SiteBuilter
                     }
                     else if (inputLine != "")
                     {
-                        //if (inCodeBlock)
-                        //{
-                        //    int tokenStart = -1;
-                        //    for (int charIndex = 0;
-                        //        charIndex < inputLine.Length;
-                        //        charIndex++)
-                        //    {
-                        //        char character = inputLine[charIndex];
-                        //        if (tokenStart == -1)
-                        //        {
-                        //            // Note(ian): Look for start of token.
-                        //            if (char.IsLetterOrDigit(character))
-                        //            {
-                        //                tokenStart = charIndex;
-                        //            }
-                        //        }
-                        //        else
-                        //        {
-                        //            string commentColor = "#608b4e";
-                        //            string keywordColor = "#569cd6";
-                        //            string stringColor = "#d69d83";
-                        //            // Note(ian): Look for end of token.
-                        //            if (!char.IsLetterOrDigit(character))
-                        //            {
-                        //                string token = inputLine.Substring(tokenStart, charIndex - tokenStart);
-                        //                string tokenColor = string.Empty;
-                        //                if (token == "if" ||
-                        //                    token == "else" ||
-                        //                    token == "do" ||
-                        //                    token == "while" ||
-                        //                    token == "for" ||
-
-                        //                    token == "int" ||
-                        //                    token == "string" ||
-                        //                    token == "float" ||
-                        //                    token == "double" ||
-
-                        //                    token == "public" ||
-                        //                    token == "private" ||
-                        //                    token == "static" ||
-                        //                    token == "internal" ||
-
-                        //                    token == "package" ||
-                        //                    token == "class" ||
-                        //                    token == "struct" ||
-                        //                    token == "void" ||
-                        //                    token == "base" ||
-                        //                    token == "throws")
-                        //                {
-                        //                    tokenColor = keywordColor;
-                        //                }
-                        //                if(tokenColor != string.Empty)
-                        //                {
-                        //                    string preTag = "<span style=\" color:" + tokenColor + " \">";
-                        //                    string postTag = "</span>";
-
-                        //                    inputLine = inputLine.Insert(charIndex, postTag);
-                        //                    inputLine = inputLine.Insert(tokenStart, preTag);
-                        //                    charIndex += preTag.Length + postTag.Length;
-                        //                }
-                        //                tokenStart = -1;
-                        //            }
-                        //        }
-                        //    }
-                        //}
-                                                
                         if (inputLine.Contains("</code>"))
                         {
                             inCodeBlock = false;
@@ -142,13 +76,17 @@ namespace SiteBuilter
 
                         if (inCodeBlock)
                         {
-                            //newBlogInfo.Text += toAdd + inputLine.Substring(j) + "<br/>\n";
                             codeBlockLines.Add(inputLine);
                         }
                         else
                         {
                             if (j < inputLine.Length && inputLine[j] == '<')
                             {
+                                int codeTagIndex = inputLine.IndexOf("<code>");
+                                if (codeTagIndex != -1)
+                                {
+                                    inputLine = inputLine.Insert(codeTagIndex, "<br/>\n");
+                                }
                                 newBlogInfo.Text += inputLine + "\n";
                             }
                             else
@@ -354,18 +292,19 @@ namespace SiteBuilter
                             charIndex > 0 &&
                             line[charIndex - 1] == '/')
                         {
-                            currentToken.Type = TokenType.SingleLineComment;
+                            newTokenType = TokenType.SingleLineComment;
+                            currentToken.Type = newTokenType;
+                            currentToken.Value = line.Substring(charIndex + 1);
+                            tokens.Add(currentToken);
+                            currentToken = new Token();
+                            charIndex = line.Length;
+                            tokens.Add(new Token() { Type = TokenType.NewLine });
                         }
 
                         if (newTokenType == TokenType.Unknown &&
                             !char.IsWhiteSpace(character))
                         {
                             currentToken.Value += character;
-
-                            if (currentToken.Value == "//")
-                            {
-                                currentToken.Type = TokenType.SingleLineComment;
-                            }
                         }
 
                         if (charIndex == line.Length - 1 ||
@@ -395,10 +334,6 @@ namespace SiteBuilter
                         {
                             currentToken.Type = newTokenType;
                         }
-                        else if (newTokenType == TokenType.SingleLineComment)
-                        {
-                            curren
-                        }
                     }
 
                     if (charIndex == line.Length - 1)
@@ -410,11 +345,7 @@ namespace SiteBuilter
                 }
             }
 
-            //foreach (Token token in tokens)
-            //{
-            //    Console.WriteLine(token.Type.ToString() + " " + token.Value);
-            //    Console.ReadLine();
-            //}
+            // Todo(Ian): Put in newlines after closing braces that bring the indent to zero.
 
             List<string> output = new List<string>();
             string currentLine = "";
@@ -435,6 +366,13 @@ namespace SiteBuilter
                 string stringColor = "#d69d83";
                 switch (token.Type)
                 {
+                    case TokenType.SingleLineComment:
+                        {
+                            string preTag = "<span style=\" color:" + commentColor + " \">//";
+                            string postTag = "</span>";
+                            currentLine += preTag + token.Value + postTag;
+                        }
+                        break;
                     case TokenType.String:
                         {
                             string preTag = "<span style=\" color:" + stringColor + " \">";
@@ -458,6 +396,10 @@ namespace SiteBuilter
                                 token.Value == "String" ||
                                 token.Value == "bool" ||
                                 token.Value == "boolean" ||
+                                token.Value == "byte" ||
+                                token.Value == "Vector2" ||
+                                token.Value == "List" ||
+                                token.Value == "var" ||
 
                                 token.Value == "public" ||
                                 token.Value == "private" ||
@@ -469,6 +411,9 @@ namespace SiteBuilter
                                 token.Value == "virtual" ||
                                 token.Value == "override" ||
                                 token.Value == "type" ||
+                                token.Value == "new" ||
+                                token.Value == "try" ||
+                                token.Value == "catch" ||
 
                                 token.Value == "package" ||
                                 token.Value == "import" ||
