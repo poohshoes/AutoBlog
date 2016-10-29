@@ -29,11 +29,11 @@ namespace SiteBuilter
         {
             string resourcePath = "..\\..\\..\\..";
             string template = File.ReadAllText(Path.Combine(resourcePath, "template.html"));
-            string indexTemplate = File.ReadAllText(Path.Combine(resourcePath, "indexTemplate.html"));
+            //string indexTemplate = File.ReadAllText(Path.Combine(resourcePath, "indexTemplate.html"));
 
             List<string> codeBlockLines = new List<string>();
             var blogs = new List<BlogInfo>();
-            foreach(string blogFile in Directory.EnumerateFiles(Path.Combine(resourcePath, "blogs")))
+            foreach (string blogFile in Directory.EnumerateFiles(Path.Combine(resourcePath, "blogs")))
             {
                 bool inCodeBlock = false;
                 var newBlogInfo = new BlogInfo();
@@ -56,7 +56,8 @@ namespace SiteBuilter
                     }
                     else if (inputLine != "")
                     {
-                        if (inputLine.Contains("</code>"))
+                        int codeTagEndIndex = inputLine.IndexOf("</code>");
+                        if (codeTagEndIndex != -1)
                         {
                             inCodeBlock = false;
                             foreach (string codeBlockLine in FormatCode(codeBlockLines))
@@ -67,11 +68,9 @@ namespace SiteBuilter
                         }
 
                         int j = 0;
-                        string toAdd = "";
                         while (j < inputLine.Length && inputLine[j] == ' ')
                         {
                             j++;
-                            toAdd += "&nbsp;";
                         }
 
                         if (inCodeBlock)
@@ -86,12 +85,17 @@ namespace SiteBuilter
                                 if (codeTagIndex != -1)
                                 {
                                     inputLine = inputLine.Insert(codeTagIndex, "<br/>\n");
+                                    newBlogInfo.Text += "<div class=\"codeDiv\">\n";
+                                }
+                                if (codeTagEndIndex != -1)
+                                {
+                                    newBlogInfo.Text += "</div>\n";
                                 }
                                 newBlogInfo.Text += inputLine + "\n";
                             }
                             else
                             {
-                                newBlogInfo.Text += "<p>" + inputLine + "<p/>\n";
+                                newBlogInfo.Text += "<p>" + inputLine + "</p>\n";
                             }
                         }
 
@@ -107,6 +111,13 @@ namespace SiteBuilter
 
             blogs.Sort(BlogInfo.Comparer);
 
+            string indexOutputDirectory = Path.Combine(resourcePath, "output");
+            string blogOutputDirectory = Path.Combine(indexOutputDirectory, "blogs");
+            if (!Directory.Exists(blogOutputDirectory))
+            {
+                Directory.CreateDirectory(blogOutputDirectory);
+            }
+
             string sidebar = "";
             List<string> links = new List<string>();
             for (int i = 0; i < blogs.Count; i++)
@@ -116,21 +127,11 @@ namespace SiteBuilter
                 sidebar += String.Format("<a href=\"{0}\">{1}</a><br/><hr/>\n", link, blogs[i].Header);
             }
 
-            string indexOutputDirectory = Path.Combine(resourcePath, "output");
-            string blogOutputDirectory = Path.Combine(indexOutputDirectory, "blogs");
-            if (!Directory.Exists(blogOutputDirectory))
-            {
-                Directory.CreateDirectory(blogOutputDirectory);
-            }
-
-            string indexOutputPath = Path.Combine(indexOutputDirectory, "index.html");
-            indexTemplate = indexTemplate.Replace("FIRST_BLOG_URL", Path.Combine("blogs", blogs[0].FileName + ".html"));
-            File.WriteAllText(indexOutputPath, indexTemplate);
-            for(int i = 0; i < blogs.Count; i++)
+            for (int i = 0; i < blogs.Count; i++)
             {
                 string output = template.Replace("INSERT_BLOG_HERE", blogs[i].Text);
                 output = output.Replace("INSERT_SIDEBAR_HERE", sidebar);
-                
+
                 if (i == 0)
                 {
                     if (blogs.Count != 1)
@@ -148,10 +149,20 @@ namespace SiteBuilter
                 }
 
                 string outputPath = Path.Combine(blogOutputDirectory, blogs[i].FileName + ".html");
+                string indexOutput = output;
                 output = output.Replace("BLOG_TOKEN", "")
                                 .Replace("INDEX_TOKEN", "../")
                                 .Replace("IMAGE_TOKEN", "../images/");
                 File.WriteAllText(outputPath, output);
+
+                if (i == 0)
+                {
+                    string indexOutputPath = Path.Combine(indexOutputDirectory, "index.html");
+                    indexOutput = indexOutput.Replace("BLOG_TOKEN", "blogs/")
+                                    .Replace("INDEX_TOKEN", "")
+                                    .Replace("IMAGE_TOKEN", "images/");
+                    File.WriteAllText(indexOutputPath, indexOutput);
+                }
             }
 
             CopyFilesRecursive(Path.Combine(resourcePath, "extras"), Path.Combine(indexOutputDirectory));
@@ -181,7 +192,7 @@ namespace SiteBuilter
                 string extension = Path.GetExtension(file);
                 if (extension == "png" || extension == "jpg")
                 {
-                    int MaxImageWidth = 915;
+                    int MaxImageWidth = 0;
                     // TODO(ian): Warning for images over the max size.
 
                     //Image img = new Bitmap("test.png");

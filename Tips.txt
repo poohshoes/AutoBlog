@@ -1,0 +1,4 @@
+Advice from the hangouts group:
+Lock the vertical navbar and make the blog post a little more now.
+"position: fixed" but then it'll overlap errything so you'll want to do right: 0px;
+and then shrink your main blog div a bit by giving it a right margin of maybe 30px (or whatever the width of your vertical nav is)

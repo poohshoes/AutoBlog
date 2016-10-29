@@ -1,24 +1,50 @@
+table.nav {
+    text-align:center;
+    margin-left: auto;
+    margin-right: auto;
+    font-weight: bold;
+}
+tbody {
+    vertical-align: middle;
+}
+.nav span {
+    padding: 8px 16px;
+    color: #dddddd;
+    background-color: #202020;
+}
+.nav a {
+    padding: 8px 16px;
+    color: #202020;
+    background-color: #000000;
+}
+.nav a:hover {
+    color: #dddddd;
+    background-color: #101010;
+}
+.nav a:visited {
+    color: #dddddd;
+}
+
 a
 {
     text-decoration: none;
-    color: #6E92EF;
+    color: #ffffff;
 }
-
 a:visited
 {
-    color: #FF75E5;
+    color: #c0c0c0;
 }
-
 a:hover
 {
-    color: #3E68D1;
+    color: #dfdfdf;
 }
 
 body
 {
-    font: 18px "Lucida Sans Unicode";
+    font: 16px "Lucida Sans Unicode";
     color: #FFFFFF;
     background-color: #202020;
+    margin-top:0;
 }
 
 hr
@@ -34,8 +60,12 @@ h1
 code
 {
     font: 14px "Courier New";
-    display:inline-block;
     line-height: 1.2em;
+}
+.codeDiv {
+    border-radius: 5px;
+    background-color: #000000;
+    padding: 5px 10px;
 }
 
 figcaption
@@ -46,14 +76,14 @@ figcaption
 
 #mainDiv
 {
-    width:1220px;
+    max-width:1200px;
     margin-left: auto;
     margin-right: auto;
 }
 
 #gamesDiv
 {
-    width:915px;
+    max-width:800px;
     margin-left: auto;
     margin-right: auto;
 }
@@ -68,7 +98,13 @@ figcaption
 
 #sidebar
 {
-    font: 14px "Lucida Sans Unicode";
+    font: 12px "Lucida Sans Unicode";
+    width:150px;
+    float:right;
+    padding-top:50px;
+    padding-left:10px;
+    padding-bottom:10px;
+    background-color: #202020;
 }
 
 #footer
