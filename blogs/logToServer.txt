@@ -1,0 +1,57 @@
+Sep 28, 2017
+Logging To A Server
+
+With Kradens Crypt to get crash logs from the team we had a janky setup where you have a text file that specifies a file path to drop the crash logs and that folder is a drop box folder.  Something about the setup always got messed up and as we are gearing up for a closed beta on Kradens Crypt I want to have access crashes and performance issues of anyone playing the game so I setup a more robust system.  
+
+First I made a database on my website that stores a version number, name, date, and log.  Then a php script on the website allows us to insert into the table from a URL.
+
+<code>
+&lt;?php
+// Store your password in a text file so you can post your code online and to source control without sharing your password.
+$pwfile = fopen("pw.txt", 'r');
+$connection = new mysqli("hernblog.com", "hernblo1_log", fread($pwfile, 9999), "hernblo1_log", "3306");
+if ($connection->connect_errno)
+{
+    echo "Failed to connect to MySQL: " . $connection->connect_error;
+}
+else
+{
+	$sql = "INSERT INTO hernblo1_log.log ( date, version, name, log) VALUES ( CURRENT_TIMESTAMP, " . $_GET['version'] . ", '" . $_GET['name'] . "', '" . $_GET['log'] . "');";
+	if (!mysqli_query($connection, $sql))
+	{
+	  echo("Error description: " . mysqli_error($connection));
+	}
+}
+?&gt;
+</code>
+
+Just from here if you put the URL www.HernBlog.com/log.php?version=0&name=test&log=TESTLOG into your browser it would insert a row into the database.
+
+Next we write the code in the game to make and send a URL.  Note that it runs in async mode as to not cause lag though we force synch mode if it's logging an exception because otherwise the program exits before the async thread can finish.
+
+<code>
+// The docs recommended using one HttpClient for the whole app for performance reasons, not sure if it matters.
+static HttpClient client;
+public static void LogToServer(string tologstring, bool isException = false)
+{
+	Log(LogType.Notify, "Attempting Server Log");
+
+	if (client == null)
+	{
+		client = new HttpClient();
+	}
+	
+	string query = "version=" + Game1.Version + "&name=" + Uri.EscapeDataString(Environment.UserName) + "&log=" + Uri.EscapeDataString(tologstring);
+	string url = "http://www.HernBlog.com/log.php?" + query;
+	var response = client.PostAsync(url, null);
+	
+	// If the game is crashing we have to force PostAsync to finish.
+	if (isException)
+	{
+		// If you have no internet connection this will crash but it doesn't matter because the program already hit an exception.
+		response.Wait();
+	}
+}
+</code>
+
+I haven't bothered to do a security pass on it but if someone messes up the database it's not a big deal as most of the data will be stale and there should be fresh data coming in often.
