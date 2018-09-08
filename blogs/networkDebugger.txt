@@ -33,7 +33,7 @@ private static void DirectoryCopy(string sourceDirectoryName, string destDirecto
 }
 </code>
 
-The above code has been optimised to only copy over files that have changed but it actually still runs a bit to slowly for my liking and so we can speed it up using Kernel32 file functions.  Stuff like this makes me wonder why I even bother with C#.
+The above code has been optimised to only copy over files that have changed but it actually still runs a bit too slowly for my liking and so we can speed it up using Kernel32 file functions.  Stuff like this makes me wonder why I even bother with C#.
 
 <code>
 const int INVALID_HANDLE_VALUE = -1;
