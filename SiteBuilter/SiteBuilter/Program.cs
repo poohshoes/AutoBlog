@@ -84,7 +84,6 @@ namespace SiteBuilter
                                 int codeTagIndex = inputLine.IndexOf("<code>");
                                 if (codeTagIndex != -1)
                                 {
-                                    inputLine = inputLine.Insert(codeTagIndex, "<br/>\n");
                                     newBlogInfo.Text += "<div class=\"codeDiv\">\n";
                                 }
                                 if (codeTagEndIndex != -1)
@@ -216,6 +215,7 @@ namespace SiteBuilter
             NewLine,
             String,
             SingleLineComment,
+            MultiLineString
         }
 
         private class Token
@@ -228,6 +228,8 @@ namespace SiteBuilter
         {
             var tokens = new List<Token>();
             Token currentToken = new Token();
+            int multiLineStirngNumQuotes = 0;
+            int multiLineStringLastLine = 0;
             for (int codeLineIndex = 0;
                 codeLineIndex < codeLines.Count;
                 codeLineIndex++)
@@ -238,7 +240,7 @@ namespace SiteBuilter
                     charIndex++)
                 {
                     char character = line[charIndex];
-
+                    
                     if (currentToken.Type == TokenType.String)
                     {
                         int numPreviousBackSlashes = 0;
@@ -248,7 +250,6 @@ namespace SiteBuilter
                         {
                             numPreviousBackSlashes++;
                         }
-                        char previousCharacter = line[charIndex - 1];
                         if (character == '"' && (numPreviousBackSlashes % 2) == 0)
                         {
                             tokens.Add(currentToken);
@@ -257,11 +258,27 @@ namespace SiteBuilter
                         else
                         {
                             currentToken.Value += character;
-
-                            if(charIndex == line.Length - 1)
-                            {
-                                Warnings.Add("Code Lexer: Multi line strings not handled!");
-                            }
+                        }
+                    }
+                    else if (currentToken.Type == TokenType.MultiLineString)
+                    {
+                        if (multiLineStringLastLine != codeLineIndex)
+                        {
+                            multiLineStringLastLine = codeLineIndex;
+                            currentToken.Value += '\n';
+                        }
+                        if (character == '"')
+                        {
+                            multiLineStirngNumQuotes++;
+                        }
+                        if (character == ';' && (multiLineStirngNumQuotes % 2) == 0)
+                        {
+                            tokens.Add(currentToken);
+                            currentToken = new Token();
+                        }
+                        else
+                        {
+                            currentToken.Value += character;
                         }
                     }
                     else if (currentToken.Type == TokenType.Unknown)
@@ -270,6 +287,12 @@ namespace SiteBuilter
                         if (character == '"')
                         {
                             newTokenType = TokenType.String;
+                        }
+                        else if(character == '@')
+                        {
+                            newTokenType = TokenType.MultiLineString;
+                            multiLineStirngNumQuotes = 0;
+                            multiLineStringLastLine = codeLineIndex;
                         }
                         if (character == ';')
                         {
@@ -341,13 +364,14 @@ namespace SiteBuilter
                             tokens.Add(currentToken);
                             currentToken = new Token();
                         }
-                        else if (newTokenType == TokenType.String)
+                        else if (newTokenType == TokenType.String ||
+                            newTokenType == TokenType.MultiLineString)
                         {
                             currentToken.Type = newTokenType;
                         }
                     }
 
-                    if (charIndex == line.Length - 1)
+                    if (charIndex == line.Length - 1 && currentToken.Type != TokenType.MultiLineString)
                     {
                         Token newLineToken = new Token();
                         newLineToken.Type = TokenType.NewLine;
@@ -391,6 +415,17 @@ namespace SiteBuilter
                             currentLine += preTag + "\"" + token.Value + "\"" + postTag;
                         }
                         break;
+                    case TokenType.MultiLineString:
+                        {
+                            string preTag = "<span style=\" color:" + stringColor + " \">";
+                            string postTag = "</span>";
+                            string composedValue = token.Value;
+                            composedValue = composedValue.Replace("\n", "<br/>");
+                            composedValue = composedValue.Replace(" ", "&nbsp;");
+                            composedValue = composedValue.Replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;");
+                            currentLine += preTag + "@" + composedValue + postTag + ";";
+                        }
+                        break;
                     case TokenType.Unknown:
                         {
                             string tokenColor = string.Empty;
@@ -412,6 +447,7 @@ namespace SiteBuilter
                                 token.Value == "List" ||
                                 token.Value == "var" ||
 
+                                token.Value == "const" ||
                                 token.Value == "public" ||
                                 token.Value == "private" ||
                                 token.Value == "static" ||
