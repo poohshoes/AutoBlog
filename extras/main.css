@@ -14,15 +14,15 @@ tbody {
 }
 .nav a {
     padding: 8px 16px;
-    color: #202020;
-    background-color: #000000;
-}
-.nav a:hover {
     color: #dddddd;
-    background-color: #101010;
+    background-color: #000000;
 }
 .nav a:visited {
     color: #dddddd;
+}
+.nav a:hover {
+    color: #c0c0c0;
+    background-color: #101010;
 }
 
 a
