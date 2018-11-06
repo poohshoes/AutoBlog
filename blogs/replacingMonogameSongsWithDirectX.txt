@@ -1,0 +1,104 @@
+Nov 6, 2018
+Replacing Monogames Song Playing with DirectX
+
+The system that monogame uses to play songs can't have more than one song playing at a time and can't load ogg files.  The following code will allow you to do this for windows only, though because it's DirectX it would probably work on linux as well.  To load an ogg I'm using the NVorbis library.  I've also added a reference to DirectX but you can reference Monogames version of it.
+
+First setup the XAudio2 and MasteringVoice:
+
+<code>
+XAudio2 xAudio = new XAudio2();
+MasteringVoice masteringVoice; 
+
+int totalSamples;
+int totalBytes;
+int addSamplesAt;
+VorbisReader vorbisReader;
+DataStream dataStream;]
+float startSecond;
+int NumFloatsInChunk = 10000;
+       
+public Constructor()
+{
+	masteringVoice = new masteringVoice(xAudio);
+}
+</code>
+
+Then when you want to load a song:
+
+<code>
+string newSongName = "Song.ogg";
+bool vorbisOpened = false;
+try
+{
+	vorbisReader = new VorbisReader(newSongName);
+	vorbisOpened = true;
+}
+catch(Exception exception)
+{
+	if(exception is FileNotFoundException)
+	{
+		Console.WriteLine("File not found " + newSongName);
+	}
+	else if(exception is InvalidDataException)
+	{
+		Console.WriteLine("File not found " + newSongName);
+	}
+}
+if(vorbisOpened)
+{
+	totalSamples = (int)vorbisReader.TotalSamples * vorbisReader.Channels;
+	totalBytes = totalSamples * 4;
+
+	dataStream = new DataStream(totalBytes, true, true);
+
+	AudioBuffer audioBuffer = new AudioBuffer();
+	audioBuffer.Stream = dataStream;
+	audioBuffer.Flags = BufferFlags.EndOfStream;
+	audioBuffer.AudioBytes = totalBytes;
+
+	WaveFormat waveFormat = new WaveFormat(vorbisReader.SampleRate, 32, vorbisReader.Channels);
+	sourceVoice = new SourceVoice(xAudio, waveFormat);
+	sourceVoice.SubmitSourceBuffer(audioBuffer, null);
+	sourceVoice.SetVolume(0f);
+	sourceVoice.Start();
+
+	int samplesToLoad = NumFloatsInChunk * 2;
+	PrepAudioChunkForStreaming(samplesToLoad);
+	addSamplesAt = NumFloatsInChunk / 2;
+	startTime = gameTime.TotalGameTime.TotalSeconds;
+}
+</code>
+
+And the function to load howevermuch of the song you want to load for streaming is:
+
+<code>        
+public void PrepAudioChunkForStreaming(int chunkSizeInFloats)
+{
+	long remainingFloatSamples = (vorbisReader.TotalSamples - vorbisReader.DecodedPosition) * vorbisReader.Channels;
+	if(remainingFloatSamples < chunkSizeInFloats)
+	{
+		chunkSizeInFloats = (int)remainingFloatSamples;
+	}
+
+	if(chunkSizeInFloats > 0)
+	{
+		float[] readBuffer = new float[chunkSizeInFloats];
+		int stuff = vorbisReader.ReadSamples(readBuffer, 0, chunkSizeInFloats);
+		byte[] byteBuffer = new byte[chunkSizeInFloats * 4];
+		Buffer.BlockCopy(readBuffer, 0, byteBuffer, 0, byteBuffer.Length);
+		dataStream.Write(byteBuffer, 0, byteBuffer.Length);
+	}
+}
+</code>
+
+Now in update we need to steam in more song data if required:
+
+<code>
+if(addSamplesAt <= sourceVoice.State.SamplesPlayed)
+{
+	PrepAudioChunkForStreaming(NumFloatsInChunk);
+	addSamplesAt += NumFloatsInChunk / 2;
+}
+</code>
+
+The code for Kradens Crypt is slightly different in that it can play multiple songs at once but you get the idea.  You should also be able to save memory by using smaller audio buffers and calling sourceVoice.SubmitSourceBuffer multiple times but the memory hit wasn't that bad in my case.  I was surprised that it wasn't nessecairy to thread the part of the code that updates the next audio part but it wasn't a performance concern, theoretically if your game lags the audio will skip but if that's an issue for you then you can thread the update code that calls PrepAudioChunkForStreaming.

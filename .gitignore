@@ -1,4 +1,5 @@
 *.suo
-bin/
-obj/
-output/
+bin
+obj
+output
+.vs
