@@ -1,0 +1,177 @@
+Dec 17, 2019
+Custom C# Sorting for %40 Speed Boost
+
+C#'s Array.Sort is slow and nobody believes me, so I've ponied up some source code to further the discussion.  My game loop was taking too long and it was causing lag, when poking into it I was spending a bunch of time on sorting and figured I'd at least take a stab at speeding it up.  I haven't looked at the assembly but I have a hunch it's because the "generic-ness" of the sort slows it down.  The promising thing about this is that I'm not a sorting expert and I bet there's a lot more performance to be gained.
+
+The code below is my test rig for timing sorting which includes my sort code.  I was able to get ~%40 speed boost over random input.
+
+<code>
+using System;
+using System.Diagnostics;
+
+namespace SortTest
+{
+    class ItemToSort : IComparable<ItemToSort>
+    {
+        public float SortKey;
+
+        public int CompareTo(ItemToSort other)
+        {
+            return SortKey.CompareTo(other.SortKey);
+        }
+    }
+
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            double totalTime = 0;
+            int numTimesToSort = 20;
+            for (int j = 0;
+                 j < numTimesToSort;
+                 j++)
+            {
+
+                // 1. Setup an array to sort.
+                int arrayToSortSize = 10000;
+                ItemToSort[] arrayToSort = new ItemToSort[arrayToSortSize];
+                Random rand = new Random();
+                for (int i = 0;
+                     i < arrayToSortSize;
+                     i++)
+                {
+                    arrayToSort[i] = new ItemToSort();
+                    arrayToSort[i].SortKey = (float)rand.NextDouble();
+                }
+
+                // 2. Sort it.
+                Stopwatch stopWatch = new Stopwatch();
+                stopWatch.Start();
+                if (false)
+                {
+                    Array.Sort(arrayToSort, 0, arrayToSortSize);
+                }
+                else
+                {
+                    int[] unsortedIndecies = new int[arrayToSortSize + 1];
+                    int unsortedIndeciesStackIndex = -1;
+                    unsortedIndecies[++unsortedIndeciesStackIndex] = 0;
+                    unsortedIndecies[++unsortedIndeciesStackIndex] = arrayToSortSize - 1;
+
+                    float[] pivots = new float[3];
+
+                    while (unsortedIndeciesStackIndex >= 0)
+                    {
+                        int maxIndex = unsortedIndecies[unsortedIndeciesStackIndex--];
+                        int minIndex = unsortedIndecies[unsortedIndeciesStackIndex--];
+
+                        ItemToSort temp;
+                        pivots[0] = arrayToSort[minIndex].SortKey;
+                        pivots[1] = arrayToSort[maxIndex].SortKey;
+                        int middleIndex = minIndex + ((maxIndex - minIndex) / 2);
+                        pivots[2] = arrayToSort[middleIndex].SortKey;
+
+                        bool pivotFound = true;
+                        if (pivots[0] == pivots[1] && pivots[1] == pivots[2])
+                        {
+                            pivotFound = false;
+                            for (int i = minIndex;
+                                 i < maxIndex;
+                                 i++)
+                            {
+                                if (arrayToSort[i].SortKey != pivots[1])
+                                {
+                                    pivots[1] = arrayToSort[i].SortKey;
+                                    pivotFound = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (pivotFound)
+                        {
+                            // Note(ian): Faster to get the median?
+                            float pivot = (pivots[0] + pivots[1] + pivots[2]) / 3f;
+
+                            int lowPartitionIndex = minIndex;
+                            for (int highPartitionIndex = minIndex;
+                                highPartitionIndex <= maxIndex;
+                                highPartitionIndex++)
+                            {
+                                if (arrayToSort[highPartitionIndex].SortKey <= pivot)
+                                {
+                                    temp = arrayToSort[lowPartitionIndex];
+                                    arrayToSort[lowPartitionIndex] = arrayToSort[highPartitionIndex];
+                                    arrayToSort[highPartitionIndex] = temp;
+
+                                    lowPartitionIndex++;
+                                }
+                            }
+
+                            if (arrayToSort[lowPartitionIndex].SortKey > pivot)
+                            {
+                                lowPartitionIndex--;
+                            }
+
+                            int lowPartitionSize = lowPartitionIndex - minIndex + 1;
+                            if (lowPartitionSize == 2)
+                            {
+                                if (arrayToSort[minIndex].SortKey > arrayToSort[minIndex + 1].SortKey)
+                                {
+                                    temp = arrayToSort[minIndex];
+                                    arrayToSort[minIndex] = arrayToSort[minIndex + 1];
+                                    arrayToSort[minIndex + 1] = temp;
+                                }
+                            }
+                            else if (lowPartitionSize > 1)
+                            {
+                                unsortedIndecies[++unsortedIndeciesStackIndex] = minIndex;
+                                unsortedIndecies[++unsortedIndeciesStackIndex] = lowPartitionIndex;
+                            }
+                            int highPartitionSize = maxIndex - lowPartitionIndex;
+                            if (highPartitionSize == 2)
+                            {
+                                if (arrayToSort[maxIndex - 1].SortKey > arrayToSort[maxIndex].SortKey)
+                                {
+                                    temp = arrayToSort[maxIndex];
+                                    arrayToSort[maxIndex] = arrayToSort[maxIndex - 1];
+                                    arrayToSort[maxIndex - 1] = temp;
+                                }
+                            }
+                            else if (highPartitionSize > 1)
+                            {
+                                unsortedIndecies[++unsortedIndeciesStackIndex] = lowPartitionIndex + 1;
+                                unsortedIndecies[++unsortedIndeciesStackIndex] = maxIndex;
+                            }
+                        }
+                    }
+                }
+
+                // 3. Timing and output.
+                stopWatch.Stop();
+
+                for (int i = 0;
+                     i < arrayToSortSize - 1;
+                     i++)
+                {
+                    if (arrayToSort[i].SortKey > arrayToSort[i + 1].SortKey)
+                    {
+                        Console.WriteLine("Sort result incorrect.");
+                        break;
+                    }
+                }
+
+                totalTime += stopWatch.Elapsed.TotalMilliseconds;
+                Console.WriteLine(stopWatch.Elapsed.TotalMilliseconds.ToString());
+            }
+
+            double averageTime = totalTime / numTimesToSort;
+            Console.WriteLine("Average: " + averageTime);
+
+            Console.ReadLine();
+        }
+    }
+}
+</code>
+
+The big caveat is that I'm the one who wrote the code for Array.Sort's CompareTo function and may be able to improve it to make C#'s sort faster but I fiddled with it a bit and couldn't find anything better and it follows the C# idiom so I don't think it's unresonable.
