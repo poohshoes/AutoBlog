@@ -1,7 +1,7 @@
 Jul 4, 2014
 London Anime and Gaming Convention
 
-As I write this Sam, Peter, and Brett are setting up a stand at the London Anime and Gaming Convention (our first con). The team operate from different parts of the world so I am staying up late to be available in case anything goes wrong. Claudio and I are both jealous as we sit at home and wait for any news or pictures. At first I saw the convention as a great way to show off our game and get some feed back. Soon we will know how that goes but I want to talk about a second unexpected benefit we discovered.
+As I write this Sam, Peter, and Brett are setting up a stand at the London Anime and Gaming Convention (our first con). The team operates from different parts of the world so I am staying up late to be available in case anything goes wrong. Claudio and I are both jealous as we sit at home and wait for any news or pictures. At first I saw the convention as a great way to show off our game and get some feed back. Soon we will know how that goes but I want to talk about a second unexpected benefit we discovered.
 
 Over the last 8 months we had been grinding away at the core of Kraden Crypt, which consists mainly of spine animations, physics integration, a relatively unique control scheme, and a level editor. We sat down occasionally to talk about what features should come next but mostly I could pick and choose the work to satisfy my whims.
 

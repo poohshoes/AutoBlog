@@ -1,9 +1,9 @@
 Dec 17, 2019
-Custom C# Sorting for %40 Speed Boost
+Custom C# Sorting for %10 to %40 Speed Boost
 
 C#'s Array.Sort is slow and nobody believes me, so I've ponied up some source code to further the discussion.  My game loop was taking too long and it was causing lag, when poking into it I was spending a bunch of time on sorting and figured I'd at least take a stab at speeding it up.  I haven't looked at the assembly but I have a hunch it's because the "generic-ness" of the sort slows it down.  The promising thing about this is that I'm not a sorting expert and I bet there's a lot more performance to be gained.
 
-The code below is my test rig for timing sorting which includes my sort code.  I was able to get ~%40 speed boost over random input.
+The code below is my test rig for timing sorting which builds a random list to sort and then has my sort code.  I was able to get a speed boost over Array.Sort of ~%10 in Release mode and ~%40 in Debug mode.
 
 <code>
 using System;
@@ -93,12 +93,18 @@ namespace SortTest
                             // Note(ian): Faster to get the median?
                             float pivot = (pivots[0] + pivots[1] + pivots[2]) / 3f;
 
+                            // Note(ian): If the piviot is the smallest number in a set that's an error.
+                            if (pivot == Math.Min(Math.Min(pivots[0], pivots[1]), pivots[2]))
+                            {
+                                pivot = Math.Max(Math.Max(pivots[0], pivots[1]), pivots[2]);
+                            }
+                           
                             int lowPartitionIndex = minIndex;
                             for (int highPartitionIndex = minIndex;
                                 highPartitionIndex <= maxIndex;
                                 highPartitionIndex++)
                             {
-                                if (arrayToSort[highPartitionIndex].SortKey <= pivot)
+                                if (arrayToSort[highPartitionIndex].SortKey < pivot)
                                 {
                                     temp = arrayToSort[lowPartitionIndex];
                                     arrayToSort[lowPartitionIndex] = arrayToSort[highPartitionIndex];
@@ -108,7 +114,8 @@ namespace SortTest
                                 }
                             }
 
-                            if (arrayToSort[lowPartitionIndex].SortKey > pivot)
+                            if (lowPartitionIndex == arrayToSortSize || 
+                                arrayToSort[lowPartitionIndex].SortKey >= pivot)
                             {
                                 lowPartitionIndex--;
                             }

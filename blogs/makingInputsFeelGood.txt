@@ -1,4 +1,0 @@
-Jul 23, 2014
-Good "Feeling" Inputs
-
-Our initial input system for using weapons was pretty basic where the left hand weapon will activate itself if the left mouse button is down and the right hand weapon is not down.  And the right hand weapon just follows the mirrored rules.  We have decided though that if you 
