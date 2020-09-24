@@ -1,0 +1,93 @@
+September 23, 2020
+AWS Subversion Setup Guide
+
+My subversion provider shut down this year and I was struggling to find a new one.  These are the setup steps I eventually discovered that allowed me to setup subversion on AWS (for free) as of September 2020.
+
+<b>1.</b> Sign up for AWS, login and go to EC2. </br>
+<b>2.</b> Create a key pair. <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html#having-ec2-create-your-key-pair">Instructions</a> </br>
+<b>3.</b> Launch an instance of Amazon Linux AMI (not Amazon Linux 2 AMI).
+<img src="IMAGE_TOKENAWSSetup1.png" /> </br>
+I think you can set the storage space to 30GB and not be charged but I couldn't find an official wording anywhere and it may have changed.
+Setup SSL, HTTP, and HTTPS access.
+<img src="IMAGE_TOKENAWSSetup2.png" /> </br>
+<b>4.</b> Download putty and connect. <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/putty.html">Instructions</a> </br>
+<b>5.</b> Update and setup subversion with the following commands. </br>
+sudo yum update -y
+sudo yum –y install mod_dav_svn
+sudo yum –y install subversion
+
+<b>6.</b> Edit the subversion config file (/etc/httpd/conf.d/subversion.conf) so it contains the below text
+(I used vi to edit with "sudo vi /etc/httpd/conf.d/subversion.conf").
+<code>
+LoadModule dav_svn_module     modules/mod_dav_svn.so
+LoadModule authz_svn_module   modules/mod_authz_svn.so
+
+<Location /repos>
+   DAV svn
+   SVNParentPath /var/www/svn
+   AuthType Basic
+   AuthName "Authorization Realm"
+   AuthUserFile /var/www/svn/passwd
+   AuthzSVNAccessFile  /var/www/svn/access
+   Require valid-user
+</Location>
+</code>
+
+<b>7.</b> Make a folder for repositories.
+sudo mkdir /var/www/svn
+
+<b>8.</b> Make an access file, the section header for all repositories is [/] but I want to be able to control user access on my repositories per user so I split my repositories up (KCBuild and KCSource are the repository names).
+(I used vi to edit with "sudo vi /var/www/access").
+<code>
+[KCBuild:/]
+ian = rw
+sam = rw
+pete = rw
+
+[KCSource:/]
+ian = rw
+sam = rw
+pete = rw
+</code>
+
+<b>9.</b> Setup a password file.  The c is only used the first time to create the file.
+sudo htpasswd -cb /var/www/svn/passwd ian PASSWORD
+sudo htpasswd -b /var/www/svn/passwd sam PASSWORD
+sudo htpasswd -b /var/www/svn/passwd pete PASSWORD
+
+<b>10.</b> Create a repository. (For me REPONAME was KCBuild and again for KCSource).
+cd /var/www/svn
+sudo svnadmin create REPONAME
+
+<b>11.</b> Give permissions to the server to make changes, you need to rerun this if you add new repositories.
+sudo chown -R apache.apache /var/www/svn
+sudo chmod 600 /var/www/svn/access /var/www/svn/passwd
+
+<b>12.</b> Make sure the server stays up if you restart.
+sudo chkconfig httpd on
+sudo chkconfig --list
+Should show 2:on 3:on 4:on 5:on for httpd
+
+<b>13.</b> Restart the server (you may need to do this if you make changes to the setup).
+sudo service httpd restart
+
+Now you can use an SVN client to connect to your repository with the url http://URL-FROM-AWS/repos/REPONAME
+
+I also wanted to transfer my existing subversion repository history so I used svnrdump to dump and then load the repository.
+To get this to work you need to make a pre-revprop-change hook for each repository
+cd /var/www/svn/REPONAME/hooks
+sudo cp pre-revprop-change.tmpl pre-revprop-change
+sudo vi pre-revprop-change
+add a line at the top "exit 0"
+
+First make dump files from the old repository.  
+svnrdump dump --username USERNAME --password PASSWORD OLD_REPOSITORY_URL > C:\SvnBackup.dump
+
+If that hangs you can do it in parts changing the rev numbers each time and making sure to use the --incremental tag on subsequent calls.
+svnrdump dump --username USERNAME --password PASSWORD --revision 1:100 OLD_REPOSITORY_URL > C:\SvnBackup1.dump
+svnrdump dump --username USERNAME --password PASSWORD --revision 101:200 --incremental OLD_REPOSITORY_URL > C:\SvnBackup2.dump
+svnrdump dump --username USERNAME --password PASSWORD --revision 201:300 --incremental OLD_REPOSITORY_URL > C:\SvnBackup3.dump
+svnrdump dump --username USERNAME --password PASSWORD --revision 300:HEAD --incremental OLD_REPOSITORY_URL > C:\SvnBackup4.dump
+
+Then load the file (or each file in order if you have multiple).
+svnrdump load --username USERNAME --password PASSWORD NEW_REPOSITORY_URL < C:\SvnBackup.dump
