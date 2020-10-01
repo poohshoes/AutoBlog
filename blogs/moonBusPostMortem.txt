@@ -71,10 +71,10 @@ There is the possibility for me to go back and add features like multiplayer or 
 
 I have been keeping my ear to the ground for marketing opportunities, as it would be great to sell a single copy to somebody I don't know. But the fact that Moon Bus didn't sell many copies hasn't really bothered me. I admit that it was a little silly for me to make an offline multiplayer only game. In the end my goal was to make a game, and have a finished for sale product, and I did it. Not only do I have a new portfolio addition, but I also learned a ton which I'm hoping will help me in a long career of game design.
 
-Obligatory <a href="http://moonbusgame.com/">Moon Bus link</a> (with trailer).
+Special thanks to Kai Kennedy who scored and edited a new and improved game trailer.
 
-<strong>Bonus Comments:</strong>
+Moon Bus is currently availiable through <a href="https://store.steampowered.com/app/734090/Moon_Bus/">Steam</a>.
+
+<h3>Bonus Comment</h3>
 
 My wife was confused when I told her I was writing a Post Mortem as it literally translates to something like "after death", though I think the term may actually apply better to Moon Bus than most projects.
-
-I would like to make a shout out to thank musician <a href="http://killallinstinct.com/">Kai Kennedy</a> who scored and edited a new and improved game trailer.

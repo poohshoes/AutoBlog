@@ -47,7 +47,7 @@ namespace SiteBuilter
                     if (lineIndex == 0)
                     {
                         newBlogInfo.Date = DateTime.Parse(inputLine);
-                        newBlogInfo.Text += "<h6>" + inputLine + "</h6>\n";
+                        newBlogInfo.Text += "<h5>" + inputLine + "</h5>\n";
                     }
                     else if (lineIndex == 1)
                     {
@@ -60,6 +60,10 @@ namespace SiteBuilter
                         if (codeTagEndIndex != -1)
                         {
                             inCodeBlock = false;
+                            if (newBlogInfo.Date.Year == 2020)
+                            {
+                                var asdf = 5;
+                            }
                             foreach (string codeBlockLine in FormatCode(codeBlockLines))
                             {
                                 newBlogInfo.Text += codeBlockLine + "<br/>\n";
@@ -86,11 +90,11 @@ namespace SiteBuilter
                                 {
                                     newBlogInfo.Text += "<div class=\"codeDiv\">\n";
                                 }
+                                newBlogInfo.Text += inputLine + "\n";
                                 if (codeTagEndIndex != -1)
                                 {
                                     newBlogInfo.Text += "</div>\n";
                                 }
-                                newBlogInfo.Text += inputLine + "\n";
                             }
                             else
                             {
@@ -123,7 +127,7 @@ namespace SiteBuilter
             {
                 string link = "BLOG_TOKEN" + blogs[i].FileName + ".html";
                 links.Add(link);
-                sidebar += String.Format("<a href=\"{0}\">{1}</a><br/><hr/>\n", link, blogs[i].Header);
+                sidebar += String.Format("<a href=\"{0}\">{1}</a><br/><br/>\n", link, blogs[i].Header);
             }
 
             for (int i = 0; i < blogs.Count; i++)
@@ -212,10 +216,13 @@ namespace SiteBuilter
             RightBracket,
             LeftBrace,
             RightBrace,
+            LeftAngleBracket,
+            RightAngleBracket,
             NewLine,
             String,
             SingleLineComment,
-            MultiLineString
+            MultiLineString,
+            WhiteSpace
         }
 
         private class Token
@@ -234,13 +241,19 @@ namespace SiteBuilter
                 codeLineIndex < codeLines.Count;
                 codeLineIndex++)
             {
+                //bool indentSpacePassed = false;
                 string line = codeLines[codeLineIndex];
                 for (int charIndex = 0;
                     charIndex < line.Length;
                     charIndex++)
                 {
                     char character = line[charIndex];
-                    
+
+                    if (character == ' ')
+                    {
+                        var asdf = 5;
+                    }
+
                     if (currentToken.Type == TokenType.String)
                     {
                         int numPreviousBackSlashes = 0;
@@ -322,6 +335,18 @@ namespace SiteBuilter
                         {
                             newTokenType = TokenType.RightBracket;
                         }
+                        else if (character == '<')
+                        {
+                            newTokenType = TokenType.LeftAngleBracket;
+                        }
+                        else if (character == '>')
+                        {
+                            newTokenType = TokenType.RightAngleBracket;
+                        }
+                        else if (character == ' ')
+                        {
+                            newTokenType = TokenType.WhiteSpace;
+                        }
                         else if (character == '/' &&
                             charIndex > 0 &&
                             line[charIndex - 1] == '/')
@@ -335,8 +360,14 @@ namespace SiteBuilter
                             tokens.Add(new Token() { Type = TokenType.NewLine });
                         }
 
+                        //if (newTokenType != TokenType.Unknown)
+                        //{
+                        //    indentSpacePassed = true;
+                        //}
+
                         if (newTokenType == TokenType.Unknown &&
                             !char.IsWhiteSpace(character))
+                            //(!char.IsWhiteSpace(character) || indentSpacePassed))
                         {
                             currentToken.Value += character;
                         }
@@ -358,7 +389,10 @@ namespace SiteBuilter
                             newTokenType == TokenType.LeftBrace ||
                             newTokenType == TokenType.RightBrace ||
                             newTokenType == TokenType.LeftBracket ||
-                            newTokenType == TokenType.RightBracket)
+                            newTokenType == TokenType.RightBracket ||
+                            newTokenType == TokenType.LeftAngleBracket ||
+                            newTokenType == TokenType.RightAngleBracket ||
+                            newTokenType == TokenType.WhiteSpace)
                         {
                             currentToken.Type = newTokenType;
                             tokens.Add(currentToken);
@@ -484,11 +518,6 @@ namespace SiteBuilter
                             }
 
                             currentLine += preTag + token.Value + postTag;
-                            if (nextToken != null &&
-                                nextToken.Type == TokenType.Unknown)
-                            {
-                                currentLine += " ";
-                            }
                         }
                         break;
                     case TokenType.Semicolon:
@@ -514,7 +543,16 @@ namespace SiteBuilter
                         currentLine += "}";
                         currentIndent--;
                         break;
-                    case TokenType.NewLine:
+                    case TokenType.LeftAngleBracket:
+                        currentLine += "&#60;";
+                        break;
+                    case TokenType.RightAngleBracket:
+                        currentLine += "&#62;";
+                        break;
+                    case TokenType.WhiteSpace:
+                        currentLine += " ";
+                        break;
+                case TokenType.NewLine:
                         string oneIndent = "&nbsp;&nbsp;&nbsp;&nbsp;";
                         string toAdd = "";
                         for (int indentIndex = 0;

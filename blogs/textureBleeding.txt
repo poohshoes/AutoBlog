@@ -34,6 +34,6 @@ To simplify the process I put the script into a quick app to do the work for you
 
 <img src="IMAGE_TOKENtool.bmp" />
 
-You can download the project <a href="http://www.hernblog.com/wp-content/uploads/2013/11/TileSheetProcessorSource.zip">here</a> if you need this in your own project.  You are also going to want to <a href="http://www.imagemagick.org/script/binary-releases.php">install Image Magick</a>.
+You can download the project <a href="http://www.hernblog.com/TileSheetProcessorSource.zip">here</a> if you need this in your own project.  You are also going to want to <a href="https://legacy.imagemagick.org/script/download.php">install Image Magick</a>.
 
 I hope this post will help others who are having this problem.  If you have a better way of dealing with texture bleeding I would love to hear from you.

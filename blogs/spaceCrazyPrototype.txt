@@ -30,9 +30,10 @@ Once you have a target locked you can shoot at it from the weapons screen.  The
 <img src="IMAGE_TOKENtutorialWeapons.png" />
 
 <h2>Play the game</h2>
-If you have an android device and aren't afraid to play a game with programmer art and no sound, please try the test level here:
 
-<a href="https://play.google.com/store/apps/details?id=com.hernblog.spacecrazy&amp;hl=en">https://play.google.com/store/apps/details?id=com.hernblog.spacecrazy&amp;hl=en</a>
+<s>You can try the game at https://play.google.com/store/apps/details?id=com.hernblog.spacecrazy&amp;hl=en</s>
+
+This game has been lost to the sands of time due to androids terrible backwards compatability.
 
 The plan is to support any device that doesn't have what android groups as  a "small" screen, if you have a device that doesn't work properly and is not a small screen, tell me what your device is and I will look into it (a photo of your problem would be appreciated as well).  Here is an table of the different device sizes, with the ones that are for sure working boxed in green:
 
