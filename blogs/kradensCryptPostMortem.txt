@@ -1,0 +1,65 @@
+March 03, 2022
+Kradens Crypt, 6 Years of Failure
+
+In December of 2020 after over 6 years of full time development as the lead (and usually only) programmer on Kradens Crypt (KC) I just couldn't work on it any longer.  The failure to produce a game in that time weighs on me and I hope that others can learn from my mistakes.
+
+In August of 2013 the Foster brothers behind KC posted an animated video of their dream game in reddit.com/r/GameDevClassifieds looking to build a team.  KC is a multiplayer game where you use hammers, swords, bows, shields, and spells to explore a dungeon and defeat monsters.  I had spent the last couple months prototyping a couple games that didn't work out and the idea of working on a team to make KC had me excited.  They picked me to be one of the developers, probably because I was a professional programmer who was okay with working for the promise of revenue share.
+
+It feels a little strange trying to give advice as a failure but only hearing from success is also problematic so I will do my best.  My guess as to the reason was a failure to prototype.  We were always working towards a final product that seemed so clear and yet we would rip out and change the underlying game mechanics over and over again.
+
+<img src="IMAGE_TOKENkc1.png" /><br/>
+
+The main premise that makes KC different was also the part that got redone the most which is physics based combat and controls.  For example, to have the character swing a hammer the player would move the mouse in a circular motion (similar to Getting Over It with Bennett Foddy) and the damage inflicted on a monster would be calculated as a measure of collision force between the hammer and monster.  The hammer is the part of the code that was redone the most and it felt like we were always trying to shove the square peg of physics simulation into the round hole of responsive player controls.
+
+My approach to the problem was to start with a physics simulation and then put constraints on it until we could have the player control it nicely.  Looking back on it I can see this didn't work well because I was always fighting against the physics systems side effects and doing tons of fine tuning.  It seems the best approach is to use the least physics possible to get the desired behaviour and I've learned many other games do this, for example rocket league has almost no realistic car physics, it exists in a world of made up rules that create a system that feels good to play.
+
+Physics based player weapons took a bit of tinkering to get working in a way that feels good but we had another major issue in that players are used to pressing a button to get an attack and we were asking the player to do something new and complex so we had to manage player expectations and try to tutorialize them into our nonstandard system.  This is the main reason we ended up redoing the player controls so many times, not because they weren't good, but because we were trying to make them easier to learn.  In the end I'm not sure that the last iteration of controls was any better than the first, it was easier to get started as a new player but there were more things you could do and complexity.
+
+We lacked a set of guiding principles for what the ultimate player controls would feel like and failed to have a system to objectively decide if each iteration was better than the one before it.  As we made changes it was hard to see if we were actually progressing or just making it different.  There was no methodology to our random unstructured playtests at conventions and with friends and we didn't have a system for objectively testing one version against another.
+
+I've heard that when Mario64 was made they just had a big room full of boxes for Mario to jump around in and they didn't make the rest of the game until moving through the space was fun.  When the first version of the player weapon controls were done I assumed we would publish with those and so went ahead implementing all the other parts of a game.  But multiple times throughout the development we ended up stopping everything else to redo the player controls and physics and then fix everything associated with those changes and in the end I'm not sure the final thing we made was going to be the right thing to ship with.  Changing any one part of a game affects many of the other parts so the further we got along the harder it was to make any changes.  It's obvious to me know that we should have taken the Mario64 approach, though every time we changed the player controls I always assumed that would be the last time.
+
+Video games tend to have much more interconnected code than other programming and when the player controls and weapon physics changed this could change art and animations, online multiplayer, redo the tutorial, monster behaviours (monsters could stun the player), the inventory system, keyboard and controller and mouse input systems, audio hooks, and probably lots of things I'm forgetting.
+
+<img src="IMAGE_TOKENHalfSwing.gif" /><br/>
+
+I spent years implementing features that don't matter if we don't have player controls we are happy shipping.  For example:
+
+Polishing the control bugs and visuals (why polish and bug fix if it's going to change?).
+
+Animation imports and art pipeline including implementing missing Spine features (eg. Spine has no feature to play animations backwards).
+
+Online multiplayer (maybe about 80% or 90% done for existing mechanics and monsters) and Steam integration.  I wanted to get this in early to make sure my idea of how to do it was correct but it touches so many parts of the code and makes everything harder to change.
+
+Map and entity editor so the Foster brothers could have more control over what was essentially their project.
+
+A monster state machine system with an editor which, while it gave the Foster brothers tons of control over monsters without needing to program, was way over engineered and probably a huge waste of time.
+
+On the other hand building a number editor and bezier curve editor and exposing various properties and timings in the pause menu was a simple but powerful way to let non programmers edit things.
+
+A chest and treasure system.
+
+Map system and level randomizer with elevator for loading next level.
+
+Menu and level transitions.
+
+A system for editing an excel spreadsheet of items and importing it into the game.
+
+Equippable armour with visuals and affects.
+
+<img src="IMAGE_TOKENkc3.png" /><br/>
+
+This was the largest project I'd written mostly myself from nothing (~35000 meaningful lines) and after working on the project for so many years I levelled up as a programmer and have different architecture ideas.  Working on old janky and prototype messy code was always a struggle to either fix it or work around it and hope it's good enough to ship.
+
+There were also always supposed to be two programmers on the project but there was never any funding and we struggled to find people who were privileged enough to be able to do revenue share who could make meaningful contributions.  It was a little frustrating not having someone to help when I was stuck on tricky problems.  The only other programmer who managed to contribute about 6 months of time named Cláudio Fernandes was a university student.  His code was good and fast but a bit messy and in retrospect I should have treated him as a mentee instead of an equal and helped him with some code reviews.  I especially appreciate his work on the shader code as it's a weakness of mine.
+
+There were a handful of other programmers that we tried to get to work on KC but I think many struggled to do self directed work.  I messed up once as well, we had a scheduled online meeting and the brothers told me at the last minute they had another programmer coming who they were adding to the project and I hadn't even had a chance to talk to them or see their code.  I was shown a sample on their github that was quite old and rejected working with them outright without giving them a chance or respecting the work the brothers put into finding another team member.  It was thoughtless of me and I wouldn't be surprised if this event caused the brothers to trust me less and feel disrespected.
+
+The final version of the player controls that I put together the brothers told me was going to be the one we shipped but I remained sceptical as every version before was also the one we were going to ship.  The end for me came as I was ping ponged between adding new features, updating existing ones to try to get them in a shippable state, and redoing the player controls, while keeping the multiplayer going.  And every time something was finished a change or new feature that wasn't part of the original plan would pop up so that it seemed like we were never actually getting anywhere.
+
+In the end I pushed hard for the scope to be cut so that we could have something to show but it wasn't what the brothers wanted.  One of the brothers accused me of not working hard (which to be fair is true as I take many weeks vacation each year and don't burn the candle at both ends and I did struggle to remain focused working from home) which was hurtful after all the work I had put into their dream game.  And in December of 2020 after over 6 years of work they suggested we take a break for "at least a few weeks" and have since ghosted me.
+
+The Foster brothers and I were inexperienced and made a lot of mistakes.  We failed to prototype and we failed to set a scope and stick to it.  We did a lot of things right and had a couple really neat vertical slices but in the end no finished product.  I really hope that the brothers can one day find a way to build their dream game but I expect I won't be involved.  I hope you can do better than we did.
+
+<img src="IMAGE_TOKENkc2.png" /><br/>
+

@@ -1,6 +1,8 @@
 September 23, 2020
 AWS Subversion Setup Guide
 
+<b>Update:  For some reason I started getting charged for this setup, not sure why and didn't want to dig into it as I no longer needed it.</b>
+
 My subversion provider shut down this year and I was struggling to find a new one.  These are the setup steps I eventually discovered that allowed me to setup subversion on AWS (for free) as of September 2020.
 
 <br/><h3>Launching an AWS Instance</h3>
